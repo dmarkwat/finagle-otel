@@ -17,9 +17,7 @@ object HttpTracer {
   val traceInitializerFailureMessageRegex: Regex = """^(?<typeName>.*): (?<message>.*)$""".r
 }
 
-// this is for clients: server will have an inverted setup due to how spans are constructed and worked on
-//
-// ref: https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/
+// translation ref: https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/
 // zipkin impl reference: https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java
 abstract class HttpTracer extends Tracer {
 
