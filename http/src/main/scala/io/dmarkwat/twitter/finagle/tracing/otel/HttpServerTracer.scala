@@ -1,7 +1,6 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.filter.PayloadSizeFilter.{ServerRepTraceKey, ServerReqTraceKey}
-import com.twitter.finagle.tracing.{TraceId, Tracer}
 import io.opentelemetry.api.common.{AttributeKey, Attributes}
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
@@ -36,7 +35,4 @@ class HttpServerTracer extends HttpTracer {
     NET_HOST_PORT.asInstanceOf[AttributeKey[Long]],
     ia.getPort.toLong
   )
-
-  // always sample when working with this tracer
-  override def sampleTrace(traceId: TraceId): Option[Boolean] = Tracer.SomeTrue
 }

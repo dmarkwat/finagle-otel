@@ -1,10 +1,10 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.filter.PayloadSizeFilter.{ClientRepTraceKey, ClientReqTraceKey}
-import com.twitter.finagle.tracing.{TraceId, Tracer}
 import io.opentelemetry.api.common.{AttributeKey, Attributes}
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes
+import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
 
 import java.net.InetSocketAddress
 
@@ -24,23 +24,20 @@ class HttpClientTracer extends HttpTracer {
   override def statusClassifier(status: Int): StatusCode = if (status < 400) StatusCode.OK else StatusCode.ERROR
 
   override def clientAddressAttrs(ia: InetSocketAddress): Attributes = Attributes.of(
-    SemanticAttributes.NET_HOST_IP,
+    NET_HOST_IP,
     ia.getAddress.getHostAddress,
-    SemanticAttributes.NET_HOST_NAME,
+    NET_HOST_NAME,
     ia.getHostName,
-    SemanticAttributes.NET_HOST_PORT.asInstanceOf[AttributeKey[Long]],
+    NET_HOST_PORT.asInstanceOf[AttributeKey[Long]],
     ia.getPort.toLong
   )
 
   override def serverAddressAttrs(ia: InetSocketAddress): Attributes = Attributes.of(
-    SemanticAttributes.NET_HOST_IP,
+    NET_PEER_IP,
     ia.getAddress.getHostAddress,
-    SemanticAttributes.NET_HOST_NAME,
+    NET_PEER_NAME,
     ia.getHostName,
-    SemanticAttributes.NET_HOST_PORT.asInstanceOf[AttributeKey[Long]],
+    NET_PEER_PORT.asInstanceOf[AttributeKey[Long]],
     ia.getPort.toLong
   )
-
-  // always sample when working with this tracer
-  override def sampleTrace(traceId: TraceId): Option[Boolean] = Tracer.SomeTrue
 }

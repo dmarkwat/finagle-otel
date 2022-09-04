@@ -1,7 +1,7 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.tracing.Annotation._
-import com.twitter.finagle.tracing.{AnnotatingTracingFilter, Record, Tracer}
+import com.twitter.finagle.tracing.{AnnotatingTracingFilter, Record, TraceId, Tracer}
 import io.opentelemetry.api.common.{AttributeKey, Attributes}
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
@@ -14,11 +14,15 @@ object HttpTracer {
   /**
    * @see [[AnnotatingTracingFilter.afterFailure]] and its usage for the format in question
    */
-  val traceInitializerFailureMessageRegex: Regex = """^(?<typeName>.*): (?<message>.*)$""".r
+  private val traceInitializerFailureMessageRegex: Regex = """^(?<typeName>.*): (?<message>.*)$""".r
 }
 
-// translation ref: https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/
-// zipkin impl reference: https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java
+/**
+ * Wires up the finagle [[Tracer]] interface for http tracing backed by Otel entirely on finagle [[com.twitter.finagle.context.Contexts]].
+ *
+ * @see [[https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java zipkin impl reference]]
+ * @see [[https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/ translation ref]]
+ */
 abstract class HttpTracer extends Tracer {
 
   val serviceNameAttr: AttributeKey[String]
@@ -28,17 +32,20 @@ abstract class HttpTracer extends Tracer {
   def serverAddressAttrs(ia: InetSocketAddress): Attributes
   def statusClassifier(status: Int): StatusCode
 
-  // mapping ref: https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/#summary
-  //
-  // links and trace state are marked as TBD ATTOW
+  /**
+   * Annotations mapped from finagle to otel (using zipkin's interpretation which is as close to finagle-native as it gets).
+   *
+   * Links and trace state are marked as TBD ATTOW.
+   *
+   * @see [[https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/#summary mapping ref]]
+   */
   override def record(record: Record): Unit = record match {
-    case Record(traceId, timestamp, annotation, duration) =>
+    // trace id and duration don't concern us: otel does things differently from finagle
+    case Record(_, timestamp, annotation, _) =>
       //
       // todo HTTP_HOST attribute is never set anywhere in finagle -- kind of needs to be!
       //
       annotation match {
-        // mapped from finagle to otel (using zipkin's interpretation which is as close to finagle-native as it gets)
-        //
         // otel: Span.Name; zipkin: Span.name
         case Rpc(name) =>
           TraceSpan.span.updateName(name)
@@ -77,8 +84,8 @@ abstract class HttpTracer extends Tracer {
         //
         // various binary annotations mapped to sometimes-complex modifications
         //
-        // ClientExceptionTracingFilter
-        // starts the event recording machinery
+        // see ClientExceptionTracingFilter
+        // starts the event recording machinery: finagle's in-tree exception Recording is a multi-Record process
         case BinaryAnnotation("error", true) =>
           TraceSpan.eventing(_.newException())
           // todo find a way to determine which errors are terminal so we can set the span status correctly?
@@ -147,4 +154,7 @@ abstract class HttpTracer extends Tracer {
         case _ =>
       }
   }
+
+  // always sample when working with otel -- it will make the decisions
+  override def sampleTrace(traceId: TraceId): Option[Boolean] = Tracer.SomeTrue
 }
