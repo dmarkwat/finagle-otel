@@ -8,13 +8,22 @@ import io.opentelemetry.sdk.OpenTelemetrySdk
 trait SdkBootstrap {
   self: SdkTraceBootstrap =>
 
-  OpenTelemetrySdk.builder().setTracerProvider(self.traceProvider).buildAndRegisterGlobal()
+  lazy val otelSdk: OpenTelemetrySdk = OpenTelemetrySdk.builder().setTracerProvider(self.traceProvider).build()
 
-  def otelTracer: Tracer = self.traceProvider.get(InstrumentationScopeName)
+  lazy val otelTracer: Tracer = self.traceProvider.get(InstrumentationScopeName)
 }
 
 object SdkBootstrap {
   val InstrumentationScopeName = "finagle-otel"
 
   def tracer: Tracer = GlobalOpenTelemetry.getTracer(InstrumentationScopeName)
+
+  /**
+   * Mix in to makes the [[SdkBootstrap.otelSdk]] the global one.
+   */
+  trait Globalized {
+    self: SdkBootstrap =>
+
+    GlobalOpenTelemetry.set(otelSdk)
+  }
 }
