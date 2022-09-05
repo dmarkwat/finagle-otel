@@ -39,3 +39,15 @@ lazy val http = (project in file("http"))
     )
   )
   .dependsOn(core)
+
+lazy val integrationTest = (project in file("integration-test"))
+  .settings(
+    name := "integration-test",
+    libraryDependencies ++= "com.google.cloud" % "google-cloud-spanner" % "6.29.0" % "test" ::
+      "io.opentelemetry" % "opentelemetry-sdk" % otelVersion % "test" ::
+      "com.typesafe.play" %% "play-json" % "2.8.2" % "test" ::
+      "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test" ::
+      "org.scalatest" %% "scalatest" % "3.2.12" % "test" ::
+      Nil
+  )
+  .dependsOn(http)
