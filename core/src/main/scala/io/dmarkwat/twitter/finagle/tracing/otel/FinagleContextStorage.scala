@@ -14,7 +14,7 @@ import io.opentelemetry.context.{Context, ContextStorage, Scope}
  *
  * Bridges the finagle world with any other non-finagle Otel usages.
  */
-class FinagleContextStorage extends ContextStorage with Logging with HasFinagleSupport {
+class FinagleContextStorage extends ContextStorage with Logging {
   def currentOpt(): Option[ContextContainer] = Contexts.local.get(ctxKey)
 
   override def attach(toAttach: Context): Scope = {
@@ -29,8 +29,10 @@ class FinagleContextStorage extends ContextStorage with Logging with HasFinagleS
     val before = container.get
     // same context -- do nothing as it's presumed to be a stacked call
     if (before == toAttach) {
+      trace("stacked attach() calls; returning no op scope")
       NoopScope
     } else {
+      trace(s"attaching context ${Span.fromContext(toAttach).getSpanContext}")
       container() = toAttach
       () => {
         if (current() != toAttach) {
@@ -38,6 +40,7 @@ class FinagleContextStorage extends ContextStorage with Logging with HasFinagleS
             .fromContext(current())
             .getSpanContext});attached(${Span.fromContext(toAttach).getSpanContext})")
         }
+        trace(s"closing scope; attaching previous context ${Span.fromContext(before).getSpanContext}")
         container() = before
       }
     }
@@ -92,9 +95,6 @@ object FinagleContextStorage {
         def make(
             next: ServiceFactory[Req, Rep]
         ): ServiceFactory[Req, Rep] = {
-          if (!ContextStorage.get().isInstanceOf[HasFinagleSupport]) {
-            throw new RuntimeException("context storage must support finagle for this filter to work")
-          }
           new ContextExternalizer[Req, Rep].andThen(next)
         }
       }

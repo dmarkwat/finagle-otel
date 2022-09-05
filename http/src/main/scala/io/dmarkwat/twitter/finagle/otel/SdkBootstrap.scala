@@ -26,4 +26,8 @@ object SdkBootstrap {
 
     GlobalOpenTelemetry.set(otelSdk)
   }
+
+  trait Auto {
+    lazy val otelTracer: Tracer = tracer
+  }
 }

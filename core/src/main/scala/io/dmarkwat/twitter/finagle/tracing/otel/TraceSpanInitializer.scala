@@ -2,9 +2,8 @@ package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.{Filter, Stack, tracing}
 import com.twitter.util.Time
-import io.opentelemetry.api.trace
-import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator
 import io.opentelemetry.api.trace.{Span, SpanKind}
+import io.opentelemetry.api.{GlobalOpenTelemetry, trace}
 import io.opentelemetry.context.propagation.{TextMapGetter, TextMapPropagator, TextMapSetter}
 
 import java.util.concurrent.TimeUnit
@@ -57,6 +56,6 @@ object TraceSpanInitializer {
 
   object TraceSpanParam {
     implicit val param: Stack.Param[TraceSpanParam] =
-      Stack.Param(TraceSpanParam(W3CTraceContextPropagator.getInstance()))
+      Stack.Param(TraceSpanParam(GlobalOpenTelemetry.getPropagators.getTextMapPropagator))
   }
 }

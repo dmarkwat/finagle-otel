@@ -7,7 +7,6 @@ import io.dmarkwat.twitter.finagle.tracing.otel.TraceSpanInitializer.TraceSpanPa
 import io.opentelemetry.api.trace
 import io.opentelemetry.context.propagation.TextMapGetter
 
-import java.lang
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, IterableHasAsJava}
 
 object HttpServerTraceSpanInitializer {
@@ -33,7 +32,7 @@ class HttpServerTraceSpanInitializer[Req <: Request, Rep](
     val TraceSpanParam(propagator) = _param
 
     val getter = new TextMapGetter[Req] {
-      override def keys(carrier: Req): lang.Iterable[String] = {
+      override def keys(carrier: Req): java.lang.Iterable[String] = {
         // presumably faster than creating sets and performing intersection
         propagator.fields().asScala.filter(carrier.headerMap.contains(_)).asJava
       }

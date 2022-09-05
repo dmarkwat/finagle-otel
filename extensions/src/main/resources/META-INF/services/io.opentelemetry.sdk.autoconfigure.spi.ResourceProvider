@@ -1,0 +1,2 @@
+io.dmarkwat.twitter.finagle.otel.ext.K8sResourceProvider
+io.dmarkwat.twitter.finagle.otel.ext.EngineResourceProvider

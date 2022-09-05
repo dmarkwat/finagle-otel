@@ -1,5 +1,6 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
+import com.twitter.util.logging.Logging
 import io.opentelemetry.context
 import io.opentelemetry.context.{Context, ContextStorage, Scope}
 
@@ -22,15 +23,25 @@ object ContextStorageProvider {
   //
   // alternatively, simply wrapping the executor at the top level or wrapping the startup of the service with the finagle
   // context may also work.
-  object WrappingContextStorage {
+  trait WrappingContextStorage {
+    self: Logging =>
+
+    // eagerly load, otherwise a standard finagle App won't do any of this until first request received
+    lazy val eagerInit: Unit = ()
+
     ContextStorage.addWrapper(storage => {
       val finagleStorage = new FinagleContextStorage
+
+      info(s"wrapping ContextStorage(${storage.getClass}) with ${finagleStorage.getClass}")
+
       new ContextStorage {
         override def attach(toAttach: Context): Scope = {
           // if the context isn't present, we're presumed to be outside finagle: use the fallback
           if (finagleStorage.currentOpt().isDefined) {
+            trace("using context in finagle storage")
             finagleStorage.attach(toAttach)
           } else {
+            trace("using context in fallback storage")
             storage.attach(toAttach)
           }
         }
