@@ -83,6 +83,16 @@ dependencies {
     compileOnly deps.autoservice
     annotationProcessor deps.autoservice
 
+    //TODO remove when start using io.opentelemetry.instrumentation.javaagent-instrumentation plugin
+    add("codegen", "io.opentelemetry.javaagent:opentelemetry-javaagent-tooling:${versions.opentelemetryJavaagentAlpha}")
+    add("codegen", "ch.qos.logback:logback-classic:1.2.3")
+    add("muzzleBootstrap", "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations-support:${versions.opentelemetryJavaagentAlpha}")
+    add("muzzleTooling", "io.opentelemetry.javaagent:opentelemetry-javaagent-extension-api:${versions.opentelemetryJavaagentAlpha}")
+    add("muzzleTooling", "io.opentelemetry.javaagent:opentelemetry-javaagent-tooling:${versions.opentelemetryJavaagentAlpha}")
+
+    //Otel Java instrumentation that we use and extend during integration tests
+    otel("io.opentelemetry.javaagent:opentelemetry-javaagent:${versions.opentelemetryJavaagent}")
+
     //All dependencies below are only for tests
     testImplementation("org.testcontainers:testcontainers:1.16.2")
     testImplementation("com.fasterxml.jackson.core:jackson-databind:2.11.2")
@@ -94,16 +104,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.2")
     testRuntimeOnly("ch.qos.logback:logback-classic:1.2.3")
-
-    //Otel Java instrumentation that we use and extend during integration tests
-    otel("io.opentelemetry.javaagent:opentelemetry-javaagent:${versions.opentelemetryJavaagent}")
-
-    //TODO remove when start using io.opentelemetry.instrumentation.javaagent-instrumentation plugin
-    add("codegen", "io.opentelemetry.javaagent:opentelemetry-javaagent-tooling:${versions.opentelemetryJavaagentAlpha}")
-    add("codegen", "ch.qos.logback:logback-classic:1.2.3")
-    add("muzzleBootstrap", "io.opentelemetry.instrumentation:opentelemetry-instrumentation-annotations-support:${versions.opentelemetryJavaagentAlpha}")
-    add("muzzleTooling", "io.opentelemetry.javaagent:opentelemetry-javaagent-extension-api:${versions.opentelemetryJavaagentAlpha}")
-    add("muzzleTooling", "io.opentelemetry.javaagent:opentelemetry-javaagent-tooling:${versions.opentelemetryJavaagentAlpha}")
 }
 
 //Produces a copy of upstream javaagent with this extension jar included inside it
@@ -139,7 +139,7 @@ tasks {
     }
 
     compileJava {
-        options.release.set(8)
+        options.release.set(11)
     }
 
     assemble.dependsOn(shadowJar)
