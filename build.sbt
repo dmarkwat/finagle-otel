@@ -28,6 +28,9 @@ lazy val http = (project in file("http"))
     name := "http",
     libraryDependencies ++= "com.twitter" %% "finagle-http" % finagleVersion ::
       "io.opentelemetry" % "opentelemetry-sdk" % otelVersion % "provided" ::
+      // todo remove: for contrived tests only
+      "com.google.cloud" % "google-cloud-spanner" % "6.29.1" ::
+      "io.grpc" % "grpc-okhttp" % "1.48.0" ::
       //
       // test dependencies
       //
@@ -46,17 +49,23 @@ lazy val integrationTest = (project in file("integration-test"))
     name := "integration-test",
     assembly / mainClass := Some("io.dmarkwat.twitter.finagle.otel.example.App"),
     assembly / assemblyMergeStrategy := {
-      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
-      case x                             => MergeStrategy.first
+      case PathList("META-INF", xs @ _*) =>
+        xs match {
+          case List("services", svc @ _*) =>
+            println(svc)
+            MergeStrategy.concat
+          case _ => MergeStrategy.discard
+        }
+      case x => MergeStrategy.first
     },
     libraryDependencies ++=
       // for assembly
       "io.opentelemetry" % "opentelemetry-sdk" % otelVersion ::
+      "io.opentelemetry" % "opentelemetry-opencensus-shim" % s"$otelVersion-alpha" ::
         // wanted to use latest but it depends on silently-breaking changes in underlying slf4j-api (1.x -> 2.x);
         // twitter finagle depends on 1.7.x and the breakage is deadly silent
         "ch.qos.logback" % "logback-classic" % "1.2.10" ::
         // for tests
-        "com.google.cloud" % "google-cloud-spanner" % "6.29.0" % "test" ::
         "io.opentelemetry" % "opentelemetry-sdk" % otelVersion % "test" ::
         "com.typesafe.play" %% "play-json" % "2.8.2" % "test" ::
         "org.scalatestplus" %% "mockito-4-5" % "3.2.12.0" % "test" ::

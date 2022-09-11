@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 object TraceSpan {
 
   // opting not to broadcast at this time as in the current impl it's redundant
-  private val contextKey = Contexts.local.newKey[Context]()
+  private[otel] val contextKey = Contexts.local.newKey[Context]()
 
   def spanBuilderFrom(
       tracer: trace.Tracer,

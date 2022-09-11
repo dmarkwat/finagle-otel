@@ -2,3 +2,7 @@
 target/
 .bsp/
 .DS_Store
+*.jar
+*.iml
+.gradle/
+gradle/

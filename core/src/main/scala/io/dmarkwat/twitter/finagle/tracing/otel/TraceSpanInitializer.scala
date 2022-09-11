@@ -2,16 +2,17 @@ package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.{Filter, Stack, tracing}
 import com.twitter.util.Time
-import io.opentelemetry.api.trace.{Span, SpanKind}
-import io.opentelemetry.api.{GlobalOpenTelemetry, trace}
+import com.twitter.util.logging.Logging
+import io.opentelemetry.api.trace.{Span, SpanKind, Tracer}
+import io.opentelemetry.api.GlobalOpenTelemetry
 import io.opentelemetry.context.propagation.{TextMapGetter, TextMapPropagator, TextMapSetter}
 
 import java.util.concurrent.TimeUnit
 
-object TraceSpanInitializer {
+object TraceSpanInitializer extends Logging {
 
   def server[Req, Rep](
-      otelTracer: trace.Tracer,
+      otelTracer: Tracer,
       propagator: TextMapPropagator,
       getter: TextMapGetter[Req],
       tracers: tracing.Tracer*
@@ -27,8 +28,12 @@ object TraceSpanInitializer {
       // extract the parent context from headers, or politely return an invalid context (implicitly via otel)
       val parent = propagator.extract(TraceSpan.context, req, getter)
 
+      trace("parent: " + parent)
+
       TraceSpan.letChild(parent, TraceSpan.spanBuilderFrom(otelTracer, SpanKind.SERVER), tracers: _*) {
+        trace("letting: " + TraceSpan.context)
         svc(req) ensure {
+          trace("ensuring: " + TraceSpan.context)
           Span.fromContext(TraceSpan.context).end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
         }
       }
@@ -36,7 +41,7 @@ object TraceSpanInitializer {
   }
 
   def client[Req, Rep](
-      otelTracer: trace.Tracer,
+      otelTracer: Tracer,
       propagator: TextMapPropagator,
       setter: TextMapSetter[Req],
       tracers: tracing.Tracer*

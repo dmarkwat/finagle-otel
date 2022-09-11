@@ -6,8 +6,11 @@ import io.opentelemetry.context.{Context, ContextStorage, Scope}
 
 // prefer to use WrappingContextStorage as it sanely implements safety mechanisms for handling
 // cases when the finagle context isn't set (think libraries doing out-of-band work)
-class ContextStorageProvider extends context.ContextStorageProvider {
-  override def get(): ContextStorage = new FinagleContextStorage
+class ContextStorageProvider extends context.ContextStorageProvider with Logging {
+  override def get(): ContextStorage = {
+    trace("loading")
+    new FinagleContextStorage
+  }
 }
 
 object ContextStorageProvider {
@@ -25,9 +28,6 @@ object ContextStorageProvider {
   // context may also work.
   trait WrappingContextStorage {
     self: Logging =>
-
-    // eagerly load, otherwise a standard finagle App won't do any of this until first request received
-    lazy val eagerInit: Unit = ()
 
     ContextStorage.addWrapper(storage => {
       val finagleStorage = new FinagleContextStorage
@@ -47,7 +47,10 @@ object ContextStorageProvider {
         }
 
         // if the finagle context isn't set, fallback to the previous storage
-        override def current(): Context = finagleStorage.currentOpt().map(_.get).getOrElse(storage.current())
+        override def current(): Context = {
+          trace("current in wrapper")
+          finagleStorage.currentOpt().map(_.get).getOrElse(storage.current())
+        }
       }
     })
   }
