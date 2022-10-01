@@ -9,7 +9,13 @@
         </encoder>
     </appender>
 
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <!-- reset all previous level configurations of all j.u.l. loggers -->
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
     <logger name="io.dmarkwat" level="trace" />
+    <logger name="io.opencensus.trace.unsafe" level="trace" />
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

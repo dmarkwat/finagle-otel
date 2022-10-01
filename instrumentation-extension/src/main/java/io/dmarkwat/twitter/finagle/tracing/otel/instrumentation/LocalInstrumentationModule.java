@@ -16,11 +16,6 @@ public class LocalInstrumentationModule extends InstrumentationModule {
 
     @Override
     public List<TypeInstrumentation> typeInstrumentations() {
-        return Arrays.asList(new LocalInstanceTypeInstrumentation(), new TraceSpanInstrumentation(), new LocalContextTypeInstrumentation());
-    }
-
-    @Override
-    public List<String> getAdditionalHelperClassNames() {
-        return List.of("io.dmarkwat.twitter.finagle.tracing.otel.instrumentation.Helper");
+        return Arrays.asList(new LocalInstanceTypeInstrumentation(), new LocalContextTypeInstrumentation());
     }
 }

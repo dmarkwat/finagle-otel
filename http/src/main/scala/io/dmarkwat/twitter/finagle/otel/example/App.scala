@@ -5,6 +5,7 @@ import com.google.cloud.spanner._
 import com.twitter.app
 import com.twitter.app.Flag
 import com.twitter.finagle.http.{Request, Response, Status}
+import com.twitter.finagle.param.Label
 import com.twitter.finagle.tracing.TraceInitializerFilter
 import com.twitter.finagle.{Http, Service, http}
 import com.twitter.io.{Buf, Reader}
@@ -12,7 +13,7 @@ import com.twitter.util.logging.Logging
 import com.twitter.util.{Await, Future}
 import io.dmarkwat.twitter.finagle.otel.SdkBootstrap
 import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.ContextExternalizer
-import io.dmarkwat.twitter.finagle.tracing.otel.{ContextStorageProvider, HttpServerTraceSpanInitializer, HttpServerTracer}
+import io.dmarkwat.twitter.finagle.tracing.otel._
 import io.opentelemetry.context.Context
 
 import java.time.{OffsetDateTime, ZoneOffset}
@@ -69,7 +70,7 @@ object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.Wr
     dbClient.write(Collections.singletonList(mutation))
   }
 
-  def performRead(dbClient: DatabaseClient, ipAddr: String): ResultSet =
+  def performRead(dbClient: DatabaseClient, ipAddr: String): ResultSet = {
     dbClient.singleUse.executeQuery(
       Statement
         .of("SELECT Access FROM AccessLog WHERE IpAddr = @ipAddr order by Access DESC limit 1")
@@ -78,6 +79,7 @@ object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.Wr
         .to(ipAddr)
         .build()
     )
+  }
 
   def deleteDatabase(dbClient: DatabaseClient): Unit = {
     dbClient.write(Collections.singletonList(Mutation.delete("Singers", KeySet.all)))
@@ -136,31 +138,45 @@ object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.Wr
             new HttpServerTraceSpanInitializer[http.Request, http.Response](otelTracer)
           )
       )
+      .configured(Label(sys.env.getOrElse("OTEL_SERVICE_NAME", "")))
       .serve(
         s"localhost:${port()}",
-        new Service[Request, Response] {
-          private val dbClient = spanner.getDatabaseClient(DatabaseId.of(options.getProjectId, "my-instance", "my-db"))
+//        new OtelExtractor[Request, Response] andThen
+          new Service[Request, Response] {
+            private def mkDbClient =
+              spanner.getDatabaseClient(DatabaseId.of(options.getProjectId, "my-instance", "my-db"))
 
-          override def apply(req: Request): Future[Response] = {
-            val rs = performRead(dbClient, req.remoteAddress.toString)
-            var lastOpt: Option[Timestamp] = None
-            if (rs.next()) {
-              Some(rs.getCurrentRowAsStruct.getTimestamp("Access"))
-            }
-            rs.close()
+            override def apply(req: Request): Future[Response] = {
+              var lastOpt: Option[Timestamp] = None
 
-            insertUsingMutation(dbClient, req.remoteAddress.toString, OffsetDateTime.now(ZoneOffset.UTC))
+              // lets finagle work correctly but then internally all the opencensus spans don't emit...
+              // removing this line will emit the spanner spans, but then not the finagle one
+              TraceScoping.wrapping {
+                val dbClient = mkDbClient
+                val rs = performRead(dbClient, req.remoteAddress.toString)
+                if (rs.next()) {
+                  // todo clean up
+                  lastOpt = Some(rs.getCurrentRowAsStruct.getTimestamp("Access"))
+                }
+                //
+                // THIS IS THE CULPRIT;
+                // it looks like the OpenCensus Tracer shim OR the opencensus usage (spanner) may not be working according to otel spec/expectations;
+                // a newly-generated span gets set as current; but then inside the scope, getting the current span returns the OTEL current span -- not the one that was just created and made active for some reason
+                //
+                rs.close()
 
-            info("logged")
-            Future.value(
-              Response(
-                req.version,
-                Status.Ok,
-                Reader.fromBuf(Buf.Utf8(lastOpt.map(_.toString).getOrElse("never before")))
+                insertUsingMutation(dbClient, req.remoteAddress.toString, OffsetDateTime.now(ZoneOffset.UTC))
+              }
+
+              Future.value(
+                Response(
+                  req.version,
+                  Status.Ok,
+                  Reader.fromBuf(Buf.Utf8(lastOpt.map(_.toString).getOrElse("never before")))
+                )
               )
-            )
+            }
           }
-        }
       )
 
     Await.ready(server)

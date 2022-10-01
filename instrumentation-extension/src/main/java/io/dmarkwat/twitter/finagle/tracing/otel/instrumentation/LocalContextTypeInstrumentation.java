@@ -5,6 +5,7 @@ import com.twitter.finagle.context.Contexts$;
 import com.twitter.finagle.context.LocalContext;
 import io.dmarkwat.twitter.finagle.tracing.otel.TraceSpan$;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import io.opentelemetry.javaagent.bootstrap.Java8BytecodeBridge;
 import io.opentelemetry.javaagent.extension.instrumentation.TypeInstrumentation;
 import io.opentelemetry.javaagent.extension.instrumentation.TypeTransformer;
@@ -81,9 +82,18 @@ public class LocalContextTypeInstrumentation implements TypeInstrumentation {
 
         // set the context before executing the inner function
         @Advice.OnMethodEnter(suppress = Throwable.class)
-        public static void restoreContext(@Advice.This Object self) {
+        public static void enter(@Advice.This Object self, @Advice.Local("otelScope") Scope scope) {
+            // todo probably not right
             // clearing out the context means no active otel Context
-            Java8BytecodeBridge.rootContext().makeCurrent();
+//            System.out.println("scoping");
+//            scope = Java8BytecodeBridge.rootContext().makeCurrent();
+        }
+
+        @Advice.OnMethodExit(suppress = Throwable.class)
+        public static void exit(@Advice.This Object self, @Advice.Local("otelScope") Scope scope) {
+            // todo probably not right
+//            System.out.println("unscoping");
+//            scope.close();
         }
     }
 

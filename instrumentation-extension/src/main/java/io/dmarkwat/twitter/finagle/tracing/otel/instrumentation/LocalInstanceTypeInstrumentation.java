@@ -1,6 +1,7 @@
 package io.dmarkwat.twitter.finagle.tracing.otel.instrumentation;
 
 import com.twitter.util.Local;
+import io.dmarkwat.twitter.finagle.tracing.otel.TraceScoping$;
 import io.dmarkwat.twitter.finagle.tracing.otel.TraceSpan;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.javaagent.bootstrap.Java8BytecodeBridge;
@@ -9,11 +10,8 @@ import io.opentelemetry.javaagent.extension.instrumentation.TypeTransformer;
 import net.bytebuddy.asm.Advice;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.matcher.ElementMatcher;
-import scala.runtime.AbstractFunction0;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
@@ -80,11 +78,10 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
 
         @Advice.OnMethodEnter(suppress = Throwable.class)
         public static void letEnter(@Advice.Argument(value = 0) Local.Context finContext,
-                                    @Advice.Argument(value = 1, readOnly = false) scala.Function0<?> fn,
-                                    @Advice.Origin Method method) {
-            System.out.println("here i am 2: " + Modifier.isFinal(method.getParameters()[1].getModifiers()));
+                                    @Advice.Argument(value = 1, readOnly = false) scala.Function0<?> fn) {
+            System.out.println("here i am 2");
             // wrap the function
-            fn = io.dmarkwat.twitter.finagle.tracing.otel.Helper.wrapFunction(fn);
+            fn = TraceScoping$.MODULE$.wrapping(fn);
 
             // todo figure out why the extension hates the java-agent-local Helper
             // the otel extension setup does NOT like this helper class...
@@ -92,6 +89,11 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
             // if i use the local one the advice is never applied;
             // if i use the one in the dependency, it works just fine...
             // fn = Helper.wrapFunction(fn);
+        }
+
+        @Advice.OnMethodExit(suppress = Throwable.class)
+        public static void letExit(@Advice.Argument(value = 0) Local.Context finContext) {
+            System.out.println("exit");
         }
     }
 

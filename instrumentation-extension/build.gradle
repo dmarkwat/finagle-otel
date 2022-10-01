@@ -13,8 +13,8 @@ plugins {
     id "com.github.johnrengelman.shadow" version "7.1.2"
     id "com.diffplug.spotless" version "6.3.0"
 
-    id "io.opentelemetry.instrumentation.muzzle-generation" version "1.17.0-alpha"
-    id "io.opentelemetry.instrumentation.muzzle-check" version "1.17.0-alpha"
+    id "io.opentelemetry.instrumentation.muzzle-generation" version "1.18.0-alpha"
+    id "io.opentelemetry.instrumentation.muzzle-check" version "1.18.0-alpha"
 }
 
 group 'io.dmarkwat.finagle.otel'
@@ -23,12 +23,12 @@ version '1.0'
 ext {
     versions = [
             // these lines are managed by .github/scripts/update-sdk-version.sh
-            opentelemetry              : "1.17.0",
-            opentelemetryAlpha         : "1.17.0-alpha",
+            opentelemetry              : "1.18.0",
+            opentelemetryAlpha         : "1.18.0-alpha",
 
             // these lines are managed by .github/scripts/update-version.sh
-            opentelemetryJavaagent     : "1.17.0",
-            opentelemetryJavaagentAlpha: "1.17.0-alpha",
+            opentelemetryJavaagent     : "1.18.0",
+            opentelemetryJavaagentAlpha: "1.18.0-alpha",
     ]
 
     deps = [
@@ -68,7 +68,7 @@ dependencies {
     runtime all necessary classes are provided by javaagent itself.
      */
     compileOnly("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:${versions.opentelemetry}")
-    compileOnly("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:${versions.opentelemetryJavaagentAlpha}")
+    compileOnly("io.opentelemetry.instrumentation:opentelemetry-instrumentation-api:${versions.opentelemetryJavaagent}")
     compileOnly("io.opentelemetry.javaagent:opentelemetry-javaagent-extension-api:${versions.opentelemetryJavaagentAlpha}")
 
     /*

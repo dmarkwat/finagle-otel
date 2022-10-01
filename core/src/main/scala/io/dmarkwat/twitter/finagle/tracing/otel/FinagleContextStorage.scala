@@ -6,7 +6,7 @@ import com.twitter.util.Future
 import com.twitter.util.logging.Logging
 import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.{ContextContainer, NoopScope, ctxKey}
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.context.{Context, ContextKey, ContextStorage, Scope}
+import io.opentelemetry.context.{Context, ContextStorage, Scope}
 
 /**
  * Basic emulation of [[io.opentelemetry.context.ThreadLocalContextStorage]]
@@ -67,40 +67,12 @@ object FinagleContextStorage {
     def update(ctx: Context): Unit = context = ctx
   }
 
-  class ContextWrapper extends Context with Logging {
-
-    val ctx = TraceSpan.context
-
-    override def get[V](key: ContextKey[V]): V = {
-      trace("get: hooray")
-      TraceSpan.context.get(key)
-    }
-
-    override def `with`[V](k1: ContextKey[V], v1: V): Context = {
-      trace("with: hooray")
-      TraceSpan.context.`with`(k1, v1)
-    }
-  }
-
   // add just after any filters that create the requisite context, found in TraceSpan
   class ContextExternalizer[Req, Rep] extends SimpleFilter[Req, Rep] with Logging {
     override def apply(request: Req, service: Service[Req, Rep]): Future[Rep] = {
-      // extract the context from the finagle stack and let as a local context value;
-      // the externalizer _requires_ the presence of the finagle context for this to be valid and so fails if it's absent
-//      val context = TraceSpan.contextOpt.getOrElse(
-//        throw new IllegalStateException("trace context isn't present in finagle context")
-//      )
-      trace("inside")
       val context = TraceSpan.context
-      trace(context)
       Contexts.local.let(ctxKey, new ContextContainer(context)) {
-        // use makeCurrent instead of directly attaching to the context storage;
-        // the interface allows for the possibility this can be different across impls
-        val scope = context.makeCurrent()
-        service(request) ensure {
-          // close, regardless of outcome
-//          scope.close()
-        }
+        TraceScoping.wrapping(service)(request)
       }
     }
   }

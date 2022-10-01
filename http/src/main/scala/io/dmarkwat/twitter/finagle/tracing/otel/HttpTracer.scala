@@ -2,6 +2,7 @@ package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.tracing.Annotation._
 import com.twitter.finagle.tracing.{AnnotatingTracingFilter, Record, TraceId, Tracer}
+import io.dmarkwat.twitter.finagle.tracing.otel.KnownAnnotations.{HostHeader, HostHeaderKey, UriScheme, UriSchemeKey}
 import io.opentelemetry.api.common.{AttributeKey, Attributes}
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
@@ -100,6 +101,9 @@ abstract class HttpTracer extends Tracer {
         //
         case BinaryAnnotation(key, value) =>
           (key, value) match {
+            // OtelExtractor
+            case (HostHeaderKey, HostHeader(host)) => TraceSpan.span.setAttribute(HTTP_HOST, host)
+            case (UriSchemeKey, UriScheme(scheme)) => TraceSpan.span.setAttribute(HTTP_SCHEME, scheme)
             // http: HttpTracingFilter
             case ("http.method", method: String) => TraceSpan.span.setAttribute(HTTP_METHOD, method)
             case ("http.uri", uri: String)       => TraceSpan.span.setAttribute(HTTP_URL, uri)
