@@ -8,10 +8,10 @@ import scala.jdk.CollectionConverters.IterableHasAsJava
 trait SdkTraceBootstrap {
   self: ResourceIdentity =>
 
-  lazy val traceSampler: Sampler = Sampler.alwaysOn()
-  lazy val traceSpanLimits: SpanLimits = SpanLimits.getDefault
+  def traceSampler: Sampler = Sampler.alwaysOn()
+  def traceSpanLimits: SpanLimits = SpanLimits.getDefault
 
-  lazy val traceSpanProcessors: List[SpanProcessor] = List.empty
+  def traceSpanProcessors: List[SpanProcessor] = List.empty
 
   lazy val traceProvider: SdkTracerProvider =
     SdkTracerProvider

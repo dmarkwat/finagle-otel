@@ -1,0 +1,19 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="App no javaagent" type="Application" factoryName="Application">
+    <envs>
+      <env name="OTEL_SERVICE_NAME" value="my-service" />
+      <env name="SPANNER_EMULATOR_HOST" value="localhost:9010" />
+    </envs>
+    <option name="MAIN_CLASS_NAME" value="io.dmarkwat.twitter.finagle.otel.example.AppNoJA" />
+    <module name="integration-test" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="io.dmarkwat.twitter.finagle.otel.example.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

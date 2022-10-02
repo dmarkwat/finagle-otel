@@ -22,8 +22,17 @@ object TraceScoping extends Logging {
     makeCurrent(TraceSpan.context)(fn)
   }
 
-  def wrapping[R](fn: => R): () => R = { () =>
-    usingCurrent(fn)
+  /**
+   * Analogous to [[wrapping()]] but without using a finagle future.
+   * Creates a closure around the current context and defers execution to the caller.
+   *
+   * @param fn
+   * @tparam R
+   * @return
+   */
+  def wrapping[R](fn: => R): () => R = {
+    val ctx = TraceSpan.context
+    () => makeCurrent(ctx)(fn)
   }
 
   def wrapping[Req, Rep](svc: Service[Req, Rep])(req: Req): Future[Rep] = {

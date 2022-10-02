@@ -11,18 +11,52 @@ import com.twitter.finagle.{Http, Service, http}
 import com.twitter.io.{Buf, Reader}
 import com.twitter.util.logging.Logging
 import com.twitter.util.{Await, Future}
-import io.dmarkwat.twitter.finagle.otel.SdkBootstrap
+import io.dmarkwat.twitter.finagle.otel._
 import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.ContextExternalizer
 import io.dmarkwat.twitter.finagle.tracing.otel._
-import io.opentelemetry.api.trace.SpanKind
+import io.dmarkwat.twitter.finale.tracing.otel.BuildInfo
 import io.opentelemetry.context.Context
+import io.opentelemetry.sdk.common.CompletableResultCode
+import io.opentelemetry.sdk.trace.SpanProcessor
+import io.opentelemetry.sdk.trace.`export`.{SimpleSpanProcessor, SpanExporter}
+import io.opentelemetry.sdk.trace.data.SpanData
 
 import java.time.{OffsetDateTime, ZoneOffset}
+import java.util
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.WrappingContextStorage with Logging {
+object AppNoJA
+    extends app.App
+    with ResourceIdentity
+    with ServiceResource
+    with K8sResource
+//    with ProcessResource
+    with HostResource
+    with SdkTraceBootstrap
+    with SdkBootstrap
+    with SdkBootstrap.Globalized
+    with ContextStorageProvider.WrappingContextStorage
+    with Logging {
 
   val port: Flag[Int] = flag("p", 9999, "port")
+
+  override val serviceName: String = sys.env.getOrElse("OTEL_SERVICE_NAME", "na")
+  override val serviceNamespace: String = "ns"
+  override val serviceInstanceId: String = "instance-0"
+  override val serviceVersion: String = BuildInfo.version
+
+  override lazy val traceSpanProcessors = super.traceSpanProcessors ++ List(SimpleSpanProcessor.create(new SpanExporter {
+    override def `export`(spans: util.Collection[SpanData]): CompletableResultCode = {
+      spans.forEach { s =>
+        debug(s)
+      }
+      CompletableResultCode.ofSuccess()
+    }
+
+    override def flush(): CompletableResultCode = CompletableResultCode.ofSuccess()
+
+    override def shutdown(): CompletableResultCode = CompletableResultCode.ofSuccess()
+  }))
 
   import com.google.cloud.spanner.{DatabaseClient, KeySet, Mutation, Statement}
   import com.google.common.collect.ImmutableList
@@ -143,42 +177,39 @@ object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.Wr
       .serve(
         s"localhost:${port()}",
 //        new OtelExtractor[Request, Response] andThen
-          new Service[Request, Response] {
-            private def mkDbClient =
-              spanner.getDatabaseClient(DatabaseId.of(options.getProjectId, "my-instance", "my-db"))
+        new Service[Request, Response] {
+          private def mkDbClient =
+            spanner.getDatabaseClient(DatabaseId.of(options.getProjectId, "my-instance", "my-db"))
 
-            override def apply(req: Request): Future[Response] = {
-              var lastOpt: Option[Timestamp] = None
+          override def apply(req: Request): Future[Response] = {
+            var lastOpt: Option[Timestamp] = None
 
-              // creates a "consumable" span for the apparently-broken opencensus shim to consume instead of the outer finagle one
-              TraceSpan.letChild(TraceSpan.spanBuilderFrom(otelTracer, SpanKind.SERVER)) {
-                TraceScoping.usingCurrent {
-                  val dbClient = mkDbClient
-                  val rs = performRead(dbClient, req.remoteAddress.toString)
-                  if (rs.next()) {
-                    // todo clean up
-                    lastOpt = Some(rs.getCurrentRowAsStruct.getTimestamp("Access"))
-                  }
-                  //
-                  // THIS IS THE CULPRIT;
-                  // it looks like the OpenCensus Tracer shim OR the opencensus usage (spanner) may not be working according to otel spec/expectations;
-                  // a newly-generated span gets set as current; but then inside the scope, getting the current span returns the OTEL current span -- not the one that was just created and made active for some reason
-                  //
-                  rs.close()
-
-                  insertUsingMutation(dbClient, req.remoteAddress.toString, OffsetDateTime.now(ZoneOffset.UTC))
-                }
+            TraceScoping.usingCurrent {
+              println("HERE I AM")
+              val dbClient = mkDbClient
+              val rs = performRead(dbClient, req.remoteAddress.toString)
+              if (rs.next()) {
+                // todo clean up
+                lastOpt = Some(rs.getCurrentRowAsStruct.getTimestamp("Access"))
               }
+              //
+              // without the javaagent present this works JUST FINE...
+              // the outer finagle span doesn't close prematurely and all seems to work as expected
+              //
+              rs.close()
 
-              Future.value(
-                Response(
-                  req.version,
-                  Status.Ok,
-                  Reader.fromBuf(Buf.Utf8(lastOpt.map(_.toString).getOrElse("never before")))
-                )
-              )
+              insertUsingMutation(dbClient, req.remoteAddress.toString, OffsetDateTime.now(ZoneOffset.UTC))
             }
+
+            Future.value(
+              Response(
+                req.version,
+                Status.Ok,
+                Reader.fromBuf(Buf.Utf8(lastOpt.map(_.toString).getOrElse("never before")))
+              )
+            )
           }
+        }
       )
 
     Await.ready(server)
