@@ -31,7 +31,6 @@ object TraceSpan {
       .setSpanKind(kind)
       .setStartTimestamp(startTime.inNanoseconds, TimeUnit.NANOSECONDS)
       .startSpan()
-
   }
 
   // make a child span from the given parent context

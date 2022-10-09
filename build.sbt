@@ -9,6 +9,7 @@ val finagleVersion = "22.7.0"
 lazy val core = (project in file("core"))
   .settings(
     name := "core",
+    compileOrder := CompileOrder.Mixed,
     libraryDependencies ++= "com.twitter" %% "finagle-core" % finagleVersion ::
       "io.opentelemetry" % "opentelemetry-api" % otelVersion % "provided" ::
       // pulled in via the sdk which we don't want to depend on -- sadly not part of the api
@@ -27,12 +28,17 @@ lazy val http = (project in file("http"))
   .enablePlugins(BuildInfoPlugin)
   .settings(
     name := "http",
+    compileOrder := CompileOrder.Mixed,
     libraryDependencies ++= "com.twitter" %% "finagle-http" % finagleVersion ::
       "io.opentelemetry" % "opentelemetry-sdk" % otelVersion % "provided" ::
       // todo remove: for contrived tests only
       "com.google.cloud" % "google-cloud-spanner" % "6.29.1" ::
       "io.grpc" % "grpc-okhttp" % "1.48.0" ::
       "io.opentelemetry.javaagent.instrumentation" % "opentelemetry-javaagent-opentelemetry-instrumentation-api" % s"$otelVersion-alpha" ::
+      // todo temporary
+      "io.opentelemetry" % "opentelemetry-opencensus-shim" % s"$otelVersion-alpha" ::
+      "net.bytebuddy" % "byte-buddy-dep" % "1.12.10" ::
+      "net.bytebuddy" % "byte-buddy-agent" % "1.12.10" ::
       //
       // test dependencies
       //

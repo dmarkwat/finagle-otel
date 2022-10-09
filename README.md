@@ -5,12 +5,23 @@ This is a rough cut of opentelemetry integration for Finagle.
 ## Current Status
 
 Working.
+Major workaround for javaagent exists.
 
 However, test coverage is far from complete and mostly manual at the moment.
 
 Outliers and known issues:
-- opencensus-shim seems to misbehave: scoped spans are not made correctly active upon first entry into the opencensus shimming from the otel world -- the otel span remains the current span despite the scoping -- and result in premature closure of the otel span
-  - and, when a new span is created for the opencensus code path to "consume" in this way, the spans don't record and emit
+- opencensus-shim misbehaves: scoped spans are not made correctly active upon first entry into the opencensus shimming from the otel world -- the otel span remains the current span despite the scoping -- and result in premature closure of the otel span
+  - this is the direct result of the otel java agent requiring a very specific implementation of `Span` (`ApplicationSpan`) to be passed along to its internals; when it isn't, issues like this one occur
+  - why it happens: opencensus shim simply passes along its own `OpenTelemetrySpanImpl` (which _wraps_ this special `ApplicationSpan`) assuming all is well; ordinarily, the interface is enough as tests _without_ the java agent work perfectly well; but _with_ the java agent, the correct behavior breaks down and fails because java agent is looking for that _very specific_ type
+  - see
+    - `io.opentelemetry.opencensusshim.OpenTelemetryContextManager::withValue`
+    - `io.opentelemetry.javaagent.instrumentation.opentelemetryapi.context.AgentContextWrapper`'s `ContextKeyBridge` for the SPAN key
+    - `io.opentelemetry.javaagent.instrumentation.opentelemetryapi.trace.Bridging#toAgentOrNull(Span)` for where the previous obtains the reference and ultiamtely where the behavior breaks down
+
+Workarounds:
+- through the use of ByteBuddy (same as used by the otel agent), an interceptor can be created which correctly extracts the internal `ApplicationSpan` from the `OpenTelemetrySpanImpl` and passes it along to the correct `Context` method, averting the issue and correcting the problem
+  - this absolutely needs to be patched into either the otel agent OR the shim
+  - attempts were made with the otel agent but to no avail: the very specific needs of the java agent are a bit overwhelming when interacting with the instrumented `application...Context` vs the javaagent-facing regular `Context` and needs to be done in-tree to get the shaded `application.*` classes, complicating everything further
 
 ## Reproducing and using
 

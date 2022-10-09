@@ -14,13 +14,13 @@ import com.twitter.util.{Await, Future}
 import io.dmarkwat.twitter.finagle.otel.SdkBootstrap
 import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.ContextExternalizer
 import io.dmarkwat.twitter.finagle.tracing.otel._
-import io.opentelemetry.api.trace.SpanKind
 import io.opentelemetry.context.Context
+import io.opentelemetry.opencensusshim.Assistant
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.WrappingContextStorage with Logging {
+object App extends Assistant with app.App with SdkBootstrap.Auto with ContextStorageProvider.WrappingContextStorage with Logging {
 
   val port: Flag[Int] = flag("p", 9999, "port")
 
@@ -143,42 +143,44 @@ object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.Wr
       .serve(
         s"localhost:${port()}",
 //        new OtelExtractor[Request, Response] andThen
-          new Service[Request, Response] {
-            private def mkDbClient =
-              spanner.getDatabaseClient(DatabaseId.of(options.getProjectId, "my-instance", "my-db"))
+        new Service[Request, Response] {
+          private def mkDbClient =
+            spanner.getDatabaseClient(DatabaseId.of(options.getProjectId, "my-instance", "my-db"))
 
-            override def apply(req: Request): Future[Response] = {
-              var lastOpt: Option[Timestamp] = None
+          override def apply(req: Request): Future[Response] = {
+            var lastOpt: Option[Timestamp] = None
 
-              // creates a "consumable" span for the apparently-broken opencensus shim to consume instead of the outer finagle one
-              TraceSpan.letChild(TraceSpan.spanBuilderFrom(otelTracer, SpanKind.SERVER)) {
-                TraceScoping.usingCurrent {
-                  val dbClient = mkDbClient
-                  val rs = performRead(dbClient, req.remoteAddress.toString)
-                  if (rs.next()) {
-                    // todo clean up
-                    lastOpt = Some(rs.getCurrentRowAsStruct.getTimestamp("Access"))
-                  }
-                  //
-                  // THIS IS THE CULPRIT;
-                  // it looks like the OpenCensus Tracer shim OR the opencensus usage (spanner) may not be working according to otel spec/expectations;
-                  // a newly-generated span gets set as current; but then inside the scope, getting the current span returns the OTEL current span -- not the one that was just created and made active for some reason
-                  //
-                  rs.close()
-
-                  insertUsingMutation(dbClient, req.remoteAddress.toString, OffsetDateTime.now(ZoneOffset.UTC))
-                }
-              }
-
-              Future.value(
-                Response(
-                  req.version,
-                  Status.Ok,
-                  Reader.fromBuf(Buf.Utf8(lastOpt.map(_.toString).getOrElse("never before")))
-                )
-              )
+            // creates a "consumable" span for the apparently-broken opencensus shim to consume instead of the outer finagle one
+//              TraceSpan.letChild(TraceSpan.spanBuilderFrom(otelTracer, SpanKind.SERVER)) {
+//                TraceScoping.usingCurrent {
+            val dbClient = mkDbClient
+            val rs = performRead(dbClient, req.remoteAddress.toString)
+            if (rs.next()) {
+              // todo clean up
+              lastOpt = Some(rs.getCurrentRowAsStruct.getTimestamp("Access"))
             }
+            //
+            // THIS IS THE CULPRIT;
+            // it looks like the OpenCensus Tracer shim OR the opencensus usage (spanner) may not be working according to otel spec/expectations;
+            // a newly-generated span gets set as current; but then inside the scope, getting the current span returns the OTEL current span -- not the one that was just created and made active for some reason
+            //
+            rs.close()
+
+            insertUsingMutation(dbClient, req.remoteAddress.toString, OffsetDateTime.now(ZoneOffset.UTC))
+//                }
+//              }
+
+            TraceSpan.span.setAttribute("test", 123)
+
+            Future.value(
+              Response(
+                req.version,
+                Status.Ok,
+                Reader.fromBuf(Buf.Utf8(lastOpt.map(_.toString).getOrElse("never before")))
+              )
+            )
           }
+        }
       )
 
     Await.ready(server)
