@@ -14,8 +14,7 @@
         <resetJUL>true</resetJUL>
     </contextListener>
 
-    <logger name="io.dmarkwat" level="trace" />
-    <logger name="io.opencensus.trace.unsafe" level="trace" />
+    <logger name="io.dmarkwat" level="debug" />
 
     <root level="INFO">
         <appender-ref ref="STDOUT" />

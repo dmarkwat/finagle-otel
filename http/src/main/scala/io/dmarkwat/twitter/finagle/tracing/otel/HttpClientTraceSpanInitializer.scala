@@ -24,6 +24,7 @@ object HttpClientTraceSpanInitializer {
       }
     }
 
+    // todo handle OtelExtractor
     TraceSpanInitializer.client(otelTracer, propagator, setter, tracer)
   }
 
@@ -54,6 +55,8 @@ class HttpClientTraceSpanInitializer[Req <: Request, Rep](
   ): ServiceFactory[Req, Rep] = {
     val traceInitializer =
       HttpClientTraceSpanInitializer[Req, Rep](otelTracer, _tracer.tracer, _param.propagator)
-    traceInitializer.andThen(next)
+    traceInitializer
+      .andThen(new OtelExtractor[Req, Rep])
+      .andThen(next)
   }
 }

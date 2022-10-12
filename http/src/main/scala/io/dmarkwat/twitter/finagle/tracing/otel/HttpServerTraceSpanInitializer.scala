@@ -40,6 +40,9 @@ class HttpServerTraceSpanInitializer[Req <: Request, Rep](
       override def get(carrier: Req, key: String): String = carrier.headerMap.getOrNull(key)
     }
 
-    TraceSpanInitializer.server(otelTracer, propagator, getter, tracer).andThen(next)
+    TraceSpanInitializer
+      .server(otelTracer, propagator, getter, tracer)
+      .andThen(new OtelExtractor[Req, Rep])
+      .andThen(next)
   }
 }

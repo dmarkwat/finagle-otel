@@ -1,13 +1,14 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.filter.PayloadSizeFilter.{ServerRepTraceKey, ServerReqTraceKey}
+import com.twitter.util.logging.Logging
 import io.opentelemetry.api.common.{AttributeKey, Attributes}
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
 
 import java.net.InetSocketAddress
 
-class HttpServerTracer extends HttpTracer {
+class HttpServerTracer extends HttpTracer with Logging {
 
   override val serviceNameAttr: AttributeKey[String] = RPC_SERVICE
   override val reqPayloadSizeTraceKey: String = ServerReqTraceKey

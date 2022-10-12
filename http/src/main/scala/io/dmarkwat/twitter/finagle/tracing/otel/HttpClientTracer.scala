@@ -1,6 +1,7 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.filter.PayloadSizeFilter.{ClientRepTraceKey, ClientReqTraceKey}
+import com.twitter.util.logging.Logging
 import io.opentelemetry.api.common.{AttributeKey, Attributes}
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes
@@ -12,7 +13,7 @@ import java.net.InetSocketAddress
 //
 // ref: https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/
 // zipkin impl reference: https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java
-class HttpClientTracer extends HttpTracer {
+class HttpClientTracer extends HttpTracer with Logging {
 
   override val serviceNameAttr: AttributeKey[String] = SemanticAttributes.PEER_SERVICE
   override val reqPayloadSizeTraceKey: String = ClientReqTraceKey
