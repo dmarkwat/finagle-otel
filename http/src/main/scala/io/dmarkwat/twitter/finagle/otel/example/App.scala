@@ -169,8 +169,6 @@ object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.Wr
 //                }
 //              }
 
-            TraceSpan.span.setAttribute("test", 123)
-
             Future.value(
               Response(
                 req.version,
