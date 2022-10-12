@@ -11,8 +11,6 @@ import net.bytebuddy.asm.Advice;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.matcher.ElementMatcher;
 
-import java.lang.reflect.Method;
-
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
 public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
@@ -37,19 +35,27 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
                 isMethod()
                         .and(named("restore"))
                         .and(takesArguments(1))
-                        .and(takesArgument(0, named("com.twitter.util.Local$Context")))
-                // shrug: no idea why this isn't working -- might need to be java.lang.Void?
-//                        .and(returns(named("scala.Unit$")))
-                ,
-                this.getClass().getName() + "$HandleRestoreAdvice");
+                        .and(takesArgument(0, named("com.twitter.util.Local$Context"))),
+                LocalInstanceTypeInstrumentation.class.getName() + "$HandleRestoreAdvice");
 
         transformer.applyAdviceToMethod(
                 isMethod()
                         .and(named("let"))
                         .and(takesArguments(2))
-                        .and(takesArgument(0, named("com.twitter.util.Local$Context")))
-                ,
-                this.getClass().getName() + "$HandleLetAdvice");
+                        .and(takesArgument(0, named("com.twitter.util.Local$Context"))),
+                LocalInstanceTypeInstrumentation.class.getName() + "$HandleLetAdvice");
+
+        transformer.applyAdviceToMethod(
+                isMethod()
+                        .and(named("closed"))
+                        .and(takesArguments(1)),
+                LocalInstanceTypeInstrumentation.class.getName() + "$HandleClosedAdvice");
+
+        transformer.applyAdviceToMethod(
+                isMethod()
+                        .and(named("letClear"))
+                        .and(takesArguments(1)),
+                LocalInstanceTypeInstrumentation.class.getName() + "$HandleLetClearAdvice");
     }
 
     public static class HandleRestoreAdvice {
@@ -65,7 +71,6 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
             // todo optimize
             scala.Option<Context> inFinagle = TraceSpan.contextOpt();
             if (inFinagle.isDefined()) {
-                System.out.println("restoring");
                 // actively ignore the returned Scope and don't do any closing;
                 // it's assumed this is all being handled by the user-space code;
                 // this merely ensures the current context is assigned in the java agent upon finagle context switching
@@ -79,24 +84,29 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
         @Advice.OnMethodEnter(suppress = Throwable.class)
         public static void letEnter(@Advice.Argument(value = 0) Local.Context finContext,
                                     @Advice.Argument(value = 1, readOnly = false) scala.Function0<?> fn) {
-            System.out.println("here i am 2");
-            // wrap the function
+            // defer obtaining and making the otel context current;
+            // works because finContext will be assigned as the active context at the time the function is called;
+            // so no extra work required
             fn = TraceScoping$.MODULE$.wrapping(fn);
-
-            // todo figure out why the extension hates the java-agent-local Helper
-            // the otel extension setup does NOT like this helper class...
-            // the 2 helper classes are identical;
-            // if i use the local one the advice is never applied;
-            // if i use the one in the dependency, it works just fine...
-            // fn = Helper.wrapFunction(fn);
-        }
-
-        @Advice.OnMethodExit(suppress = Throwable.class)
-        public static void letExit(@Advice.Argument(value = 0) Local.Context finContext) {
-            System.out.println("exit");
         }
     }
 
     public static class HandleClosedAdvice {
+        @Advice.OnMethodEnter(suppress = Throwable.class)
+        public static void closedEnter(@Advice.Argument(value = 0, readOnly = false) scala.Function0<?> fn) {
+            // create closure around current context;
+            // obtains a reference to the current context's otel context, preserving semantics of Local::closed
+            fn = TraceScoping$.MODULE$.closed(fn);
+        }
+    }
+
+    public static class HandleLetClearAdvice {
+
+        @Advice.OnMethodEnter(suppress = Throwable.class)
+        public static void letClearEnter(@Advice.Argument(value = 0, readOnly = false) scala.Function0<?> fn) {
+            // use the root context;
+            // with all locals cleared, there is no context to use: set it to root
+            fn = TraceScoping$.MODULE$.wrapping(Context.root(), fn);
+        }
     }
 }

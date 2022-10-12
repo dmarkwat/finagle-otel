@@ -28,8 +28,6 @@ object TraceSpanInitializer extends Logging {
       // extract the parent context from headers, or politely return an invalid context (implicitly via otel)
       val parent = propagator.extract(TraceSpan.context, req, getter)
 
-      trace("parent: " + parent)
-
       TraceSpan.letChild(parent, TraceSpan.spanBuilderFrom(otelTracer, SpanKind.SERVER), tracers: _*) {
         trace("letting: " + TraceSpan.context)
         svc(req) ensure {

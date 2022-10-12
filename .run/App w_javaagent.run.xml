@@ -6,6 +6,7 @@
       <env name="OTEL_SERVICE_NAME" value="my-service" />
       <env name="OTEL_TRACES_EXPORTER" value="logging" />
       <env name="SPANNER_EMULATOR_HOST" value="localhost:9010" />
+      <env name="OTEL_METRICS_EXPORTER" value="none" />
     </envs>
     <option name="MAIN_CLASS_NAME" value="io.dmarkwat.twitter.finagle.otel.example.App" />
     <module name="integration-test" />

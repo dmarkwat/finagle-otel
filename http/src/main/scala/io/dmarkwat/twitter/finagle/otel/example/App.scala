@@ -15,12 +15,11 @@ import io.dmarkwat.twitter.finagle.otel.SdkBootstrap
 import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.ContextExternalizer
 import io.dmarkwat.twitter.finagle.tracing.otel._
 import io.opentelemetry.context.Context
-import io.opentelemetry.opencensusshim.Assistant
 
 import java.time.{OffsetDateTime, ZoneOffset}
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-object App extends Assistant with app.App with SdkBootstrap.Auto with ContextStorageProvider.WrappingContextStorage with Logging {
+object App extends app.App with SdkBootstrap.Auto with ContextStorageProvider.WrappingContextStorage with Logging {
 
   val port: Flag[Int] = flag("p", 9999, "port")
 
