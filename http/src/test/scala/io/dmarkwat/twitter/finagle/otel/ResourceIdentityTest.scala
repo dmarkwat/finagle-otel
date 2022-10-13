@@ -1,6 +1,6 @@
 package io.dmarkwat.twitter.finagle.otel
 
-import io.dmarkwat.twitter.finale.tracing.otel.BuildInfo
+import com.twitter.finagle.InitExtern
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -43,6 +43,6 @@ class ResourceIdentityTest extends AnyFlatSpec with should.Matchers {
     stacked should contain(SERVICE_INSTANCE_ID -> "an-instance-id")
     stacked should contain(SERVICE_VERSION -> "0.0.0-alpha")
     stacked should contain(WEBENGINE_NAME -> "finagle")
-    stacked should contain(WEBENGINE_VERSION -> BuildInfo.finagleVersion)
+    stacked should contain(WEBENGINE_VERSION -> InitExtern.finagleVersion())
   }
 }

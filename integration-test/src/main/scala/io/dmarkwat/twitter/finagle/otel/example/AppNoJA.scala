@@ -5,8 +5,8 @@ import com.twitter.finagle.Http
 import com.twitter.util.Await
 import com.twitter.util.logging.Logging
 import io.dmarkwat.twitter.finagle.otel._
-import io.dmarkwat.twitter.finagle.tracing.otel._
-import io.dmarkwat.twitter.finale.tracing.otel.BuildInfo
+import io.dmarkwat.twitter.finagle.tracing.otel.ContextStorageProvider
+import io.dmarkwat.twitter.finale.otel.example.BuildInfo
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.SpanProcessor
 import io.opentelemetry.sdk.trace.`export`.{SimpleSpanProcessor, SpanExporter}
@@ -20,7 +20,7 @@ object AppNoJA
     with ResourceIdentity
     with ServiceResource
     with K8sResource
-//    with ProcessResource
+    //    with ProcessResource
     with HostResource
     with SdkTraceBootstrap
     with SdkBootstrap
@@ -53,7 +53,7 @@ object AppNoJA
     import com.twitter.finagle.OtelImplicits._
 
     val server = Http.server
-      .withOtel()
+      .withOtel(otelTracer)
       .serve(
         s"localhost:${port()}",
         new SimpleService(mkDbClient)

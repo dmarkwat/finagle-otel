@@ -11,11 +11,28 @@ import io.opentelemetry.api.common.AttributeKey
 import io.opentelemetry.api.trace.StatusCode
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
 
+/**
+ * Wires up the finagle [[Tracer]] interface for http tracing backed by Otel entirely on finagle [[com.twitter.finagle.context.Contexts]].
+ *
+ * Top-level [[Tracer]] for handling the most common cases in the finagle stack.
+ */
 abstract class OtelTracer extends Tracer {
   self: Logging =>
 
+  /**
+   * [[AttributeKey]] for mapping [[ServiceName]] down to its otel tag counterpart.
+   */
   val serviceNameAttr: AttributeKey[String]
 
+  /**
+   * A stacked set of [[PartialFunction]]s for handling [[Annotation]]s.
+   *
+   * Obtain precise timestamp and duration values for when the annotation was generated
+   * via [[OtelTracer.TraceMeta.get]].
+   *
+   * @return a [[PartialFunction]]; the default case need not be handled as it's
+   *         handled by [[OtelTracer.record()]]
+   */
   def annotationHandlers: PartialFunction[Annotation, Unit] = {
     case Rpc(name) =>
       TraceSpan.span.updateName(name)

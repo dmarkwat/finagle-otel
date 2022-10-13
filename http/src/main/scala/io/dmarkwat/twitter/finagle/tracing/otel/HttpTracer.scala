@@ -21,7 +21,7 @@ object HttpTracer {
 }
 
 /**
- * Wires up the finagle [[Tracer]] interface for http tracing backed by Otel entirely on finagle [[com.twitter.finagle.context.Contexts]].
+ * Base http tracer implementation shared by server and client sides to enforce otel's standardization.
  *
  * @see [[https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java zipkin impl reference]]
  * @see [[https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/ translation ref]]

@@ -49,7 +49,6 @@ object TraceSpan {
   }
 
   // explicitly let the context as current
-  @TraceContextBoundary
   def let[O](context: Context, tracers: Tracer*)(f: => O): O = {
     Contexts.local.let(contextKey, context) {
       Trace.letTracers(tracers) {

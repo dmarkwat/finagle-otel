@@ -1,6 +1,6 @@
 package io.dmarkwat.twitter.finagle.otel
 
-import io.dmarkwat.twitter.finale.tracing.otel.BuildInfo
+import com.twitter.finagle.InitExtern
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes
 
@@ -20,7 +20,7 @@ trait ServiceResource extends ResourceIdentity {
       .put(ResourceAttributes.SERVICE_INSTANCE_ID, serviceInstanceId)
       .put(ResourceAttributes.SERVICE_VERSION, serviceVersion)
       .put(ResourceAttributes.WEBENGINE_NAME, "finagle")
-      .put(ResourceAttributes.WEBENGINE_VERSION, BuildInfo.finagleVersion)
+      .put(ResourceAttributes.WEBENGINE_VERSION, InitExtern.finagleVersion())
       .build()
   )
 }

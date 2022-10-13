@@ -43,7 +43,7 @@ object TraceSpanInitializer extends Logging {
       propagator: TextMapPropagator,
       setter: TextMapSetter[Req],
       tracers: tracing.Tracer*
-  ) =
+  ): Filter[Req, Rep, Req, Rep] =
     Filter.mk[Req, Rep, Req, Rep] { (req, svc) =>
       // make a new child from the current context -- whether that's the unset/root or one provided
       // (e.g. for a client used inside a server context)

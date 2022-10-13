@@ -8,6 +8,12 @@ import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
 
 import java.net.InetSocketAddress
 
+/**
+ * Server-side http tracer.
+ *
+ * @see [[https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/ reference]]
+ * @see [[https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java zipkin impl reference]]
+ */
 class HttpServerTracer extends HttpTracer with Logging {
 
   override val serviceNameAttr: AttributeKey[String] = RPC_SERVICE

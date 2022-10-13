@@ -1,6 +1,6 @@
 package io.dmarkwat.twitter.finagle.otel.ext;
 
-import io.dmarkwat.twitter.finagle.tracing.otel.ext.BuildInfo;
+import com.twitter.finagle.InitExtern;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
@@ -12,7 +12,7 @@ public class EngineResourceProvider implements ResourceProvider {
     public Resource createResource(ConfigProperties config) {
         Attributes attrs = Attributes.builder()
                 .put(ResourceAttributes.WEBENGINE_NAME, "finagle")
-                .put(ResourceAttributes.WEBENGINE_VERSION, BuildInfo.instance.finagleVersion)
+                .put(ResourceAttributes.WEBENGINE_VERSION, InitExtern.finagleVersion())
                 .build();
         return Resource.create(attrs);
     }

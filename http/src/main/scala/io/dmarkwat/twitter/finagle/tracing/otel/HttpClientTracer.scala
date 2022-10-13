@@ -9,10 +9,12 @@ import io.opentelemetry.semconv.trace.attributes.SemanticAttributes._
 
 import java.net.InetSocketAddress
 
-// this is for clients: server will have an inverted setup due to how spans are constructed and worked on
-//
-// ref: https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/
-// zipkin impl reference: https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java
+/**
+ * Client-side http tracer.
+ *
+ * @see [[https://opentelemetry.io/docs/reference/specification/trace/sdk_exporters/zipkin/ reference]]
+ * @see [[https://github.com/openzipkin/zipkin-finagle/blob/master/core/src/main/java/zipkin2/finagle/SpanRecorder.java zipkin impl reference]]
+ */
 class HttpClientTracer extends HttpTracer with Logging {
 
   override val serviceNameAttr: AttributeKey[String] = SemanticAttributes.PEER_SERVICE
