@@ -1,12 +1,12 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
-import com.twitter.finagle._
 import com.twitter.finagle.context.Contexts
-import com.twitter.util.Future
+import com.twitter.finagle.tracing.Tracer
 import com.twitter.util.logging.Logging
-import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.{ContextContainer, NoopScope, ctxKey}
+import io.dmarkwat.twitter.finagle.tracing.otel.ContextStorage.{ContextContainer, NoopScope, ctxKey}
+import io.opentelemetry
 import io.opentelemetry.api.trace.Span
-import io.opentelemetry.context.{Context, ContextStorage, Scope}
+import io.opentelemetry.context.{Context, Scope}
 
 /**
  * Basic emulation of [[io.opentelemetry.context.ThreadLocalContextStorage]]
@@ -14,7 +14,7 @@ import io.opentelemetry.context.{Context, ContextStorage, Scope}
  *
  * Bridges the finagle world with any other non-finagle Otel usages.
  */
-class FinagleContextStorage extends ContextStorage with Logging {
+class ContextStorage extends opentelemetry.context.ContextStorage with Logging {
   def currentOpt(): Option[ContextContainer] = Contexts.local.get(ctxKey)
 
   override def attach(toAttach: Context): Scope = {
@@ -53,8 +53,16 @@ class FinagleContextStorage extends ContextStorage with Logging {
   }
 }
 
-object FinagleContextStorage {
+object ContextStorage extends Traced {
   val ctxKey: Contexts.local.Key[ContextContainer] = Contexts.local.newKey[ContextContainer]()
+
+  override def let[O](context: Context, tracers: Tracer*)(f: => O): O = {
+    Contexts.local.let(ctxKey, new ContextContainer(context)) {
+      f
+    }
+  }
+
+  override def contextOpt: Option[Context] = Contexts.local.get(ctxKey).map(_.get)
 
   object NoopScope extends Scope {
     override def close(): Unit = {}
@@ -67,29 +75,4 @@ object FinagleContextStorage {
     def update(ctx: Context): Unit = context = ctx
   }
 
-  // add just after any filters that create the requisite context, found in TraceSpan
-  class ContextExternalizer[Req, Rep] extends SimpleFilter[Req, Rep] with Logging {
-    override def apply(request: Req, service: Service[Req, Rep]): Future[Rep] = {
-      val context = TraceSpan.context
-      Contexts.local.let(ctxKey, new ContextContainer(context)) {
-        TraceScoping.wrapping(service)(request)
-      }
-    }
-  }
-
-  object ContextExternalizer {
-    val role: Stack.Role = Stack.Role("FinagleContextStorageExternalizer")
-
-    def module[Req, Rep]: Stackable[ServiceFactory[Req, Rep]] =
-      new Stack.Module0[ServiceFactory[Req, Rep]] {
-        val role: Stack.Role = ContextExternalizer.role
-        val description = ""
-
-        def make(
-            next: ServiceFactory[Req, Rep]
-        ): ServiceFactory[Req, Rep] = {
-          new ContextExternalizer[Req, Rep].andThen(next)
-        }
-      }
-  }
 }

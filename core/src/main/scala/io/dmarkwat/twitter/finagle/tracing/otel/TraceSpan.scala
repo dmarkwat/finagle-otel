@@ -5,51 +5,19 @@ import com.twitter.finagle.context.Contexts.local
 import com.twitter.finagle.tracing.{Trace, Tracer}
 import com.twitter.util.Time
 import io.dmarkwat.twitter.finagle.tracing.otel.TraceSpan.TraceSpanEventing.EventTracing
-import io.opentelemetry.api.baggage.Baggage
 import io.opentelemetry.api.common.{AttributeKey, Attributes, AttributesBuilder}
-import io.opentelemetry.api.trace
-import io.opentelemetry.api.trace.{Span, SpanKind}
 import io.opentelemetry.context.Context
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes.EXCEPTION_EVENT_NAME
 
 import java.util.concurrent.TimeUnit
 
-object TraceSpan {
+object TraceSpan extends Traced {
 
   // opting not to broadcast at this time as in the current impl it's redundant
   private[otel] val contextKey = Contexts.local.newKey[Context]()
 
-  def spanBuilderFrom(
-      tracer: trace.Tracer,
-      kind: SpanKind,
-      startTime: Time = Time.nowNanoPrecision
-  ): Context => Span = { parent =>
-    tracer
-      // null or empty string will use the otel default
-      .spanBuilder(null)
-      .setParent(parent)
-      .setSpanKind(kind)
-      .setStartTimestamp(startTime.inNanoseconds, TimeUnit.NANOSECONDS)
-      .startSpan()
-  }
-
-  // make a child span from the given parent context
-  def letChild[O](parent: Context, span: Context => Span, tracers: Tracer*)(f: => O): O = {
-    val context = Context
-      .root()
-      .`with`(span(parent))
-      .`with`(Baggage.empty())
-
-    TraceSpan.let(context, tracers: _*)(f)
-  }
-
-  // make a child span with the current context as parent
-  def letChild[O](span: Context => Span, tracers: Tracer*)(f: => O): O = {
-    letChild(TraceSpan.context, span, tracers: _*)(f)
-  }
-
   // explicitly let the context as current
-  def let[O](context: Context, tracers: Tracer*)(f: => O): O = {
+  override def let[O](context: Context, tracers: Tracer*)(f: => O): O = {
     Contexts.local.let(contextKey, context) {
       Trace.letTracers(tracers) {
         TraceSpanEventing.let(f)
@@ -57,20 +25,7 @@ object TraceSpan {
     }
   }
 
-  // self-contained wrapper around the tracing system's equivalent call
-  def letTracers[O](tracers: Tracer*)(f: => O): O = {
-    Trace.letTracers(tracers)(f)
-  }
-
-  // for debugging and short-circuiting
-  def hasContext: Boolean = Contexts.local.get(contextKey).isDefined
-
-  def contextOpt: Option[Context] = Contexts.local.get(contextKey)
-
-  // the current context from finagle's POV
-  def context: Context = contextOpt.getOrElse(Context.root())
-
-  def span: Span = Span.fromContext(context)
+  override def contextOpt: Option[Context] = Contexts.local.get(contextKey)
 
   def eventing(t: EventTracing => EventTracing): Unit = TraceSpanEventing.get.foreach(_.updated(t))
 

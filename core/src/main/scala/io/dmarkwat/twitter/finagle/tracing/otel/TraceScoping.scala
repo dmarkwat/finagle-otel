@@ -9,7 +9,7 @@ import scala.util.Using
 
 object TraceScoping extends Logging {
 
-  def makeCurrent[R](context: Context)(fn: => R): R = {
+  def makeCurrent[R](context: Context)(fn: => R): R = ContextStorage.let(context) {
     trace(s"using context: $context")
     val tried = Using(context.makeCurrent()) { _ =>
       fn
@@ -18,39 +18,24 @@ object TraceScoping extends Logging {
     tried.get
   }
 
-  def usingCurrent[R](fn: => R): R = {
-    makeCurrent(TraceSpan.context)(fn)
-  }
-
-  def closed[R](fn: => R): () => R = {
-    val ctx = TraceSpan.context
-    () => makeCurrent(ctx)(fn)
-  }
-
   /**
    * Analogous to [[wrapping()]] but without using a finagle future.
    * Creates a closure around the current context and defers execution to the caller.
    *
+   * @param context
    * @param fn
    * @tparam R
    * @return
    */
-  def wrapping[R](fn: => R): () => R = { () =>
-    {
-      val ctx = TraceSpan.context
-      makeCurrent(ctx)(fn)
-    }
-  }
-
   def wrapping[R](context: Context)(fn: => R): () => R = () => makeCurrent(context)(fn)
 
-  def wrapping[Req, Rep](svc: Service[Req, Rep])(req: Req): Future[Rep] = {
-    val ctx = TraceSpan.context
-    val scope = ctx.makeCurrent()
-    trace(s"using context: $ctx")
-    svc(req) ensure {
-      trace(s"releasing context: $ctx")
-      scope.close()
+  def wrapping[Req, Rep](context: Context, svc: Service[Req, Rep])(req: Req): Future[Rep] =
+    ContextStorage.let(context) {
+      val scope = context.makeCurrent()
+      trace(s"using context: $context")
+      svc(req) ensure {
+        trace(s"releasing context: $context")
+        scope.close()
+      }
     }
-  }
 }

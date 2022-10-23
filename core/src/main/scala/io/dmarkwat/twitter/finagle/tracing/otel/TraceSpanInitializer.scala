@@ -3,8 +3,8 @@ package io.dmarkwat.twitter.finagle.tracing.otel
 import com.twitter.finagle.{Filter, Stack, tracing}
 import com.twitter.util.Time
 import com.twitter.util.logging.Logging
-import io.opentelemetry.api.trace.{Span, SpanKind, Tracer}
 import io.opentelemetry.api.GlobalOpenTelemetry
+import io.opentelemetry.api.trace.{Span, SpanKind, Tracer}
 import io.opentelemetry.context.propagation.{TextMapGetter, TextMapPropagator, TextMapSetter}
 
 import java.util.concurrent.TimeUnit
@@ -28,11 +28,11 @@ object TraceSpanInitializer extends Logging {
       // extract the parent context from headers, or politely return an invalid context (implicitly via otel)
       val parent = propagator.extract(TraceSpan.context, req, getter)
 
-      TraceSpan.letChild(parent, TraceSpan.spanBuilderFrom(otelTracer, SpanKind.SERVER), tracers: _*) {
+      TraceSpan.letChild(parent, Traced.spanBuilderFrom(otelTracer, SpanKind.SERVER), tracers: _*) {
         trace("letting: " + TraceSpan.context)
         svc(req) ensure {
           trace("ensuring: " + TraceSpan.context)
-          Span.fromContext(TraceSpan.context).end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
+          TraceSpan.span.end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
         }
       }
     }
@@ -47,7 +47,7 @@ object TraceSpanInitializer extends Logging {
     Filter.mk[Req, Rep, Req, Rep] { (req, svc) =>
       // make a new child from the current context -- whether that's the unset/root or one provided
       // (e.g. for a client used inside a server context)
-      TraceSpan.letChild(TraceSpan.spanBuilderFrom(otelTracer, SpanKind.CLIENT), tracers: _*) {
+      TraceSpan.letChild(Traced.spanBuilderFrom(otelTracer, SpanKind.CLIENT), tracers: _*) {
         propagator.inject(TraceSpan.context, req, setter)
         svc(req) ensure {
           Span.fromContext(TraceSpan.context).end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)

@@ -2,7 +2,7 @@ package com.twitter.finagle
 
 import com.twitter.finagle.Http.{Client, Server}
 import com.twitter.finagle.tracing.TraceInitializerFilter
-import io.dmarkwat.twitter.finagle.tracing.otel.FinagleContextStorage.ContextExternalizer
+import io.dmarkwat.twitter.finagle.tracing.otel.TracedInitializer
 import io.dmarkwat.twitter.finagle.tracing.otel.{HttpClientTraceSpanInitializer, HttpServerTraceSpanInitializer, HttpServerTracer}
 import io.opentelemetry.api.trace.Tracer
 
@@ -17,7 +17,7 @@ object OtelImplicits {
           stack
             .insertAfter(
               TraceInitializerFilter.role,
-              ContextExternalizer.module[http.Request, http.Response]
+              TracedInitializer.module[http.Request, http.Response]
             )
             .insertAfter(
               TraceInitializerFilter.role,

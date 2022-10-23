@@ -9,9 +9,9 @@ val finagleVersion = "22.7.0"
 lazy val core = (project in file("core"))
   .settings(
     name := "core",
-    compileOrder := CompileOrder.Mixed,
     coverageEnabled := true,
     libraryDependencies ++= "io.opentelemetry" % "opentelemetry-api" % otelVersion % "provided" ::
+      "io.opentelemetry" % "opentelemetry-sdk" % otelVersion % "provided" ::
       // pulled in via the sdk which we don't want to depend on -- sadly not part of the api
       "io.opentelemetry" % "opentelemetry-semconv" % s"$otelVersion-alpha" % "provided" ::
       "org.slf4j" % "jul-to-slf4j" % "1.7.32" ::
@@ -22,7 +22,26 @@ lazy val core = (project in file("core"))
       "io.opentelemetry" % "opentelemetry-semconv" % s"$otelVersion-alpha" % "test" ::
       Nil
   )
-  .dependsOn(finagleBridge, testbed % "test")
+  .dependsOn(finagleBridge % "compile->compile;test->test", testbed % "test")
+
+lazy val extension = (file(".") / "instrumentation-extension/build/libs/instrumentation-extension-1.0-all.jar").getCanonicalPath
+
+lazy val coreTesting = (project in file("core") / "testing")
+  .enablePlugins(JavaAgent)
+  .settings(
+    name := "core-testing",
+    Test / envVars ++= Map(
+      "OTEL_TRACES_EXPORTER" -> "logging",
+      "OTEL_METRICS_EXPORTER" -> "none",
+      "OTEL_JAVAAGENT_EXTENSIONS" -> extension
+    ),
+    javaAgents += "io.opentelemetry.javaagent" % "opentelemetry-javaagent" % "1.19.1" % "test"
+  )
+  .dependsOn(
+    // https://stackoverflow.com/a/8194192/1836968
+    core % "compile->compile;test->test",
+    testbed % "test"
+  )
 
 lazy val http = (project in file("http"))
   .settings(
@@ -97,9 +116,14 @@ lazy val finagleBridge = (project in file("finagle-bridge"))
   )
 
 lazy val testbed = (project in file("testbed"))
+  // https://github.com/sbt/sbt-javaagent
+  .enablePlugins(JavaAgent)
   .settings(
     name := "testbed",
     libraryDependencies ++= "io.opentelemetry" % "opentelemetry-sdk" % otelVersion ::
+      "io.opentelemetry.javaagent" % "opentelemetry-testing-common" % s"$otelVersion-alpha" ::
+      "ch.qos.logback" % "logback-classic" % "1.2.10" ::
       "org.scalatest" %% "scalatest" % "3.2.12" ::
-      Nil
+      Nil,
+    javaAgents += "io.opentelemetry.javaagent" % "opentelemetry-javaagent" % "1.19.1" % "test"
   )

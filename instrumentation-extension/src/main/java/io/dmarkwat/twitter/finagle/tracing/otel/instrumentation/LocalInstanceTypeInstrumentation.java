@@ -87,7 +87,7 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
             // defer obtaining and making the otel context current;
             // works because finContext will be assigned as the active context at the time the function is called;
             // so no extra work required
-            fn = TraceScoping$.MODULE$.wrapping(fn);
+            fn = TraceScoping$.MODULE$.wrapping(TraceSpan.context(), fn);
         }
     }
 
@@ -96,7 +96,7 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
         public static void closedEnter(@Advice.Argument(value = 0, readOnly = false) scala.Function0<?> fn) {
             // create closure around current context;
             // obtains a reference to the current context's otel context, preserving semantics of Local::closed
-            fn = TraceScoping$.MODULE$.closed(fn);
+            fn = TraceScoping$.MODULE$.wrapping(TraceSpan.context(), fn);
         }
     }
 

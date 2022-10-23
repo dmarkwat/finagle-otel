@@ -1,4 +1,5 @@
 package io.dmarkwat.twitter.finagle.otel
+
 import io.opentelemetry.sdk.resources.Resource
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes
 

@@ -2,14 +2,14 @@ package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.util.logging.Logging
 import io.opentelemetry.context
-import io.opentelemetry.context.{Context, ContextStorage, Scope}
+import io.opentelemetry.context.{Context, Scope}
 
 // prefer to use WrappingContextStorage as it sanely implements safety mechanisms for handling
 // cases when the finagle context isn't set (think libraries doing out-of-band work)
 class ContextStorageProvider extends context.ContextStorageProvider with Logging {
-  override def get(): ContextStorage = {
+  override def get(): context.ContextStorage = {
     trace("loading")
-    new FinagleContextStorage
+    new ContextStorage
   }
 }
 
@@ -29,10 +29,10 @@ object ContextStorageProvider {
   trait WrappingContextStorage {
     self: Logging =>
 
-    ContextStorage.addWrapper(storage => {
-      val finagleStorage = new FinagleContextStorage
+    context.ContextStorage.addWrapper(storage => {
+      val finagleStorage = new ContextStorage
 
-      info(s"wrapping ContextStorage(${storage.getClass}) with ${finagleStorage.getClass}")
+      debug(s"wrapping ContextStorage(${storage.getClass}) with ${finagleStorage.getClass}")
 
       new ContextStorage {
         override def attach(toAttach: Context): Scope = {
