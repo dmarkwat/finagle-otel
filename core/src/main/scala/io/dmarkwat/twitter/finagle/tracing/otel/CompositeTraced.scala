@@ -5,7 +5,7 @@ import io.opentelemetry.context.Context
 object CompositeTraced extends Traced {
   override def let[O](context: Context, tracers: Tracer*)(f: => O): O =
     TraceSpan.let(context, tracers: _*) {
-      ContextStorage.containedOver(context) {
+      TraceScoping.extern.makeCurrent(context) {
         f
       }
     }

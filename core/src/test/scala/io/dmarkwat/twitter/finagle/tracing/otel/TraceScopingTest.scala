@@ -18,25 +18,25 @@ class TraceScopingTest
     with ExecutorSupport {
 
   "Some function" should "use current" in new SdkTestCase {
-    TraceScoping.makeCurrent(TraceSpan.context) {
+    TraceScoping.extern.makeCurrent(TraceSpan.context) {
       TraceSpan.context should equal(root)
     }
 
-    TraceScoping.makeCurrent(TraceSpan.context) {
-      TraceScoping.makeCurrent(TraceSpan.context) {
+    TraceScoping.extern.makeCurrent(TraceSpan.context) {
+      TraceScoping.extern.makeCurrent(TraceSpan.context) {
         TraceSpan.context should equal(root)
       }
     }
   }
 
   it should "be wrapped" in new SdkTestCase {
-    TraceScoping.wrapping(root) {
+    TraceScoping.extern.wrapping(root) {
       TraceSpan.context should equal(root)
     }
 
     val thread = Thread.currentThread()
     val ctx = this.randomContext
-    val fn = TraceScoping.wrapping(ctx) {
+    val fn = TraceScoping.extern.wrapping(ctx) {
       thread should not equal Thread.currentThread()
       Span.current() should equal(ctx.asSpan)
     }

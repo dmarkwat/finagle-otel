@@ -7,7 +7,7 @@ import io.dmarkwat.twitter.finagle.tracing.otel.param
 // add just after any filters that create the requisite context, found in TraceSpan
 class TracedInitializer[Req, Rep](traced: Traced) extends SimpleFilter[Req, Rep] {
   override def apply(request: Req, service: Service[Req, Rep]): Future[Rep] = {
-    TraceScoping.wrapping(traced.context, service)(request)
+    TraceScoping.extern.wrapping(traced.context, service)(request)
   }
 }
 

@@ -1,8 +1,9 @@
 package io.dmarkwat.twitter.finagle.tracing.otel.instrumentation;
 
 import com.twitter.util.Local;
-import io.dmarkwat.twitter.finagle.tracing.otel.TraceScoping$;
+import io.dmarkwat.twitter.finagle.tracing.otel.TraceScoping;
 import io.dmarkwat.twitter.finagle.tracing.otel.TraceSpan;
+import io.dmarkwat.twitter.finagle.tracing.otel.Traced;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.javaagent.bootstrap.Java8BytecodeBridge;
 import io.opentelemetry.javaagent.extension.instrumentation.TypeInstrumentation;
@@ -13,6 +14,11 @@ import net.bytebuddy.matcher.ElementMatcher;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
+/**
+ * Instruments the finagle library according to the top level {@link Traced} returned from {@link Traced#get()}.
+ * <p>
+ * In all likelihood and cases, this will be {@link TraceSpan}, however, no chance is taken.
+ */
 public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
     @Override
     public ElementMatcher<TypeDescription> typeMatcher() {
@@ -69,7 +75,7 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
                 return;
             }
             // todo optimize
-            scala.Option<Context> inFinagle = TraceSpan.contextOpt();
+            scala.Option<Context> inFinagle = Traced.get().contextOpt();
             if (inFinagle.isDefined()) {
                 // actively ignore the returned Scope and don't do any closing;
                 // it's assumed this is all being handled by the user-space code;
@@ -87,7 +93,7 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
             // defer obtaining and making the otel context current;
             // works because finContext will be assigned as the active context at the time the function is called;
             // so no extra work required
-            fn = TraceScoping$.MODULE$.wrapping(TraceSpan.context(), fn);
+            fn = TraceScoping.extern$.MODULE$.wrapping(TraceSpan.context(), fn);
         }
     }
 
@@ -96,7 +102,7 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
         public static void closedEnter(@Advice.Argument(value = 0, readOnly = false) scala.Function0<?> fn) {
             // create closure around current context;
             // obtains a reference to the current context's otel context, preserving semantics of Local::closed
-            fn = TraceScoping$.MODULE$.wrapping(TraceSpan.context(), fn);
+            fn = TraceScoping.extern$.MODULE$.wrapping(TraceSpan.context(), fn);
         }
     }
 
@@ -106,7 +112,7 @@ public class LocalInstanceTypeInstrumentation implements TypeInstrumentation {
         public static void letClearEnter(@Advice.Argument(value = 0, readOnly = false) scala.Function0<?> fn) {
             // use the root context;
             // with all locals cleared, there is no context to use: set it to root
-            fn = TraceScoping$.MODULE$.wrapping(Context.root(), fn);
+            fn = TraceScoping.extern$.MODULE$.wrapping(Context.root(), fn);
         }
     }
 }

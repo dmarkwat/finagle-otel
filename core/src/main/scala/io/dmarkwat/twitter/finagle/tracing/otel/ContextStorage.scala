@@ -58,12 +58,6 @@ class ContextStorage extends opentelemetry.context.ContextStorage with Logging {
 private[otel] object ContextStorage {
   val ctxKey: Contexts.local.Key[ContextContainer] = Contexts.local.newKey[ContextContainer]()
 
-  def containedOver[O](context: Context)(f: => O): O = {
-    Contexts.local.let(ctxKey, new ContextContainer(context)) {
-      f
-    }
-  }
-
   def ensure[O](f: => O): O = {
     Contexts.local.let(ctxKey, Contexts.local.getOrElse(ctxKey, ContextContainer.empty)) { f }
   }
