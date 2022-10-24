@@ -42,11 +42,13 @@ object Traced {
 
   private[otel] val contextKey = Contexts.local.newKey[Traced]()
 
+  val default: Traced = CompositeTraced
+
   def let[R](t: Traced)(f: => R): R = {
     Contexts.local.let(contextKey, t)(f)
   }
 
-  def get: Option[Traced] = Contexts.local.get(contextKey)
+  def get: Traced = Contexts.local.get(contextKey).getOrElse(default)
 
   def spanBuilderFrom(
       tracer: trace.Tracer,

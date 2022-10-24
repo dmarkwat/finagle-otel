@@ -9,7 +9,7 @@ import scala.util.Using
 
 object TraceScoping extends Logging {
 
-  def makeCurrent[R](context: Context)(fn: => R): R = ContextStorage.let(context) {
+  def makeCurrent[R](context: Context)(fn: => R): R = ContextStorage.ensure {
     trace(s"using context: $context")
     val tried = Using(context.makeCurrent()) { _ =>
       fn
@@ -18,19 +18,10 @@ object TraceScoping extends Logging {
     tried.get
   }
 
-  /**
-   * Analogous to [[wrapping()]] but without using a finagle future.
-   * Creates a closure around the current context and defers execution to the caller.
-   *
-   * @param context
-   * @param fn
-   * @tparam R
-   * @return
-   */
   def wrapping[R](context: Context)(fn: => R): () => R = () => makeCurrent(context)(fn)
 
   def wrapping[Req, Rep](context: Context, svc: Service[Req, Rep])(req: Req): Future[Rep] =
-    ContextStorage.let(context) {
+    ContextStorage.ensure {
       val scope = context.makeCurrent()
       trace(s"using context: $context")
       svc(req) ensure {

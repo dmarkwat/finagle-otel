@@ -49,7 +49,7 @@ object ContextStorageProvider {
         // if the finagle context isn't set, fallback to the previous storage
         override def current(): Context = {
           trace("current in wrapper")
-          finagleStorage.currentOpt().map(_.get).getOrElse(storage.current())
+          Option(finagleStorage.current()).getOrElse(storage.current())
         }
       }
     })

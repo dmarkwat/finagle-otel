@@ -17,7 +17,7 @@ object TracedInitializer {
   def module[Req, Rep]: Stackable[ServiceFactory[Req, Rep]] =
     new Stack.Module1[param.Traced, ServiceFactory[Req, Rep]] {
       val role: Stack.Role = TracedInitializer.role
-      val description = ""
+      val description = "Initializes the Traced instance for use in the Service stack"
 
       def make(
           traced: param.Traced,

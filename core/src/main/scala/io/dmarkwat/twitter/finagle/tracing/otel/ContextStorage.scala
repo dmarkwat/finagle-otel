@@ -1,7 +1,6 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.context.Contexts
-import com.twitter.finagle.tracing.Tracer
 import com.twitter.util.logging.Logging
 import io.dmarkwat.twitter.finagle.tracing.otel.ContextStorage.{ContextContainer, NoopScope, ctxKey}
 import io.opentelemetry
@@ -26,12 +25,15 @@ class ContextStorage extends opentelemetry.context.ContextStorage with Logging {
         "misconfigured stack: can't attach the current context without a context container in finagle local context"
       )
     )
-    val before = container.get
+
     // same context -- do nothing as it's presumed to be a stacked call
-    if (before == toAttach) {
+    if (container.getOpt.isDefined && container.getOpt.get == toAttach) {
       trace("stacked attach() calls; returning no op scope")
       NoopScope
     } else {
+      // because in the otel world this is allowed to be null
+      val before = container.getOpt.orNull
+
       trace(s"attaching context ${Span.fromContext(toAttach).getSpanContext}")
       container() = toAttach
       () => {
@@ -49,30 +51,37 @@ class ContextStorage extends opentelemetry.context.ContextStorage with Logging {
   // get the current context, or null if we're outside a finagle context boundary -- null is per the interface spec
   override def current(): Context = {
     trace("current from finagle")
-    currentOpt().map(_.get).orNull
+    currentOpt().flatMap(_.getOpt).orNull
   }
 }
 
-object ContextStorage extends Traced {
+private[otel] object ContextStorage {
   val ctxKey: Contexts.local.Key[ContextContainer] = Contexts.local.newKey[ContextContainer]()
 
-  override def let[O](context: Context, tracers: Tracer*)(f: => O): O = {
+  def containedOver[O](context: Context)(f: => O): O = {
     Contexts.local.let(ctxKey, new ContextContainer(context)) {
       f
     }
   }
 
-  override def contextOpt: Option[Context] = Contexts.local.get(ctxKey).map(_.get)
+  def ensure[O](f: => O): O = {
+    Contexts.local.let(ctxKey, Contexts.local.getOrElse(ctxKey, ContextContainer.empty)) { f }
+  }
 
-  object NoopScope extends Scope {
+  private[otel] object NoopScope extends Scope {
     override def close(): Unit = {}
   }
 
   final class ContextContainer(private var context: Context) {
+
     // current otel context as viewed by the current service stack
-    def get: Context = context
+    def getOpt: Option[Context] = Option(context)
 
     def update(ctx: Context): Unit = context = ctx
+  }
+
+  object ContextContainer {
+    def empty(): ContextContainer = new ContextContainer(null)
   }
 
 }

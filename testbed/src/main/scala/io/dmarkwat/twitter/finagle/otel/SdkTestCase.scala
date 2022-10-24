@@ -4,8 +4,8 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.{SpanKind, Tracer}
 import io.opentelemetry.context.Context
 
-abstract class SdkTestCase()(implicit otel: => OpenTelemetry) {
-  lazy val tracer: Tracer = otel.getTracerProvider.get("test")
+abstract class SdkTestCase()(implicit openTelemetry: => OpenTelemetry) {
+  lazy val tracer: Tracer = openTelemetry.getTracerProvider.get("test")
 
   def root: Context = Context.root()
 
