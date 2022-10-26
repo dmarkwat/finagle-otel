@@ -6,7 +6,6 @@ import com.twitter.util.Await
 import com.twitter.util.logging.Logging
 import io.dmarkwat.twitter.finagle.otel._
 import io.dmarkwat.twitter.finagle.tracing.otel.ContextStorageProvider
-import io.dmarkwat.twitter.finale.otel.example.BuildInfo
 import io.opentelemetry.sdk.common.CompletableResultCode
 import io.opentelemetry.sdk.trace.SpanProcessor
 import io.opentelemetry.sdk.trace.`export`.{SimpleSpanProcessor, SpanExporter}
@@ -31,7 +30,8 @@ object AppNoJA
   override val serviceName: String = sys.env.getOrElse("OTEL_SERVICE_NAME", "na")
   override val serviceNamespace: String = "ns"
   override val serviceInstanceId: String = "instance-0"
-  override val serviceVersion: String = BuildInfo.version
+  // todo need to find way to get this from gradle (like sbt-buildinfo)
+  override val serviceVersion: String = "22.7.0"
 
   override lazy val traceSpanProcessors: List[SpanProcessor] =
     super.traceSpanProcessors ++ List(SimpleSpanProcessor.create(new SpanExporter {

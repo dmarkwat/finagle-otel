@@ -68,7 +68,7 @@ abstract class HttpTracer extends OtelTracer {
     //
     // various binary annotations mapped to sometimes-complex modifications
     //
-    case BinaryAnnotation(HostHeaderKey, HostHeader(host)) => TraceSpan.span.setAttribute(HTTP_HOST, host)
+    case BinaryAnnotation(HostHeaderKey, HostHeader(host)) => TraceSpan.span.setAttribute(NET_HOST_NAME, host)
     case BinaryAnnotation(UriSchemeKey, UriScheme(scheme)) => TraceSpan.span.setAttribute(HTTP_SCHEME, scheme)
     //
     // otel network-level attributes

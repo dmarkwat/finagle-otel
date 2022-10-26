@@ -26,13 +26,13 @@ object TraceSpanInitializer extends Logging {
       //
 
       // extract the parent context from headers, or politely return an invalid context (implicitly via otel)
-      val parent = propagator.extract(TraceSpan.context, req, getter)
+      val parent = propagator.extract(Traced.get.context, req, getter)
 
-      TraceSpan.letChild(parent, Traced.spanBuilderFrom(otelTracer, SpanKind.SERVER), tracers: _*) {
-        trace("letting: " + TraceSpan.context)
+      Traced.get.letChild(parent, Traced.spanBuilderFrom(otelTracer, SpanKind.SERVER), tracers: _*) {
+        trace("letting: " + Traced.get.context)
         svc(req) ensure {
-          trace("ensuring: " + TraceSpan.context)
-          TraceSpan.span.end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
+          trace("ensuring: " + Traced.get.context)
+          Traced.get.span.end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
         }
       }
     }
@@ -47,10 +47,10 @@ object TraceSpanInitializer extends Logging {
     Filter.mk[Req, Rep, Req, Rep] { (req, svc) =>
       // make a new child from the current context -- whether that's the unset/root or one provided
       // (e.g. for a client used inside a server context)
-      TraceSpan.letChild(Traced.spanBuilderFrom(otelTracer, SpanKind.CLIENT), tracers: _*) {
-        propagator.inject(TraceSpan.context, req, setter)
+      Traced.get.letChild(Traced.spanBuilderFrom(otelTracer, SpanKind.CLIENT), tracers: _*) {
+        propagator.inject(Traced.get.context, req, setter)
         svc(req) ensure {
-          Span.fromContext(TraceSpan.context).end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
+          Span.fromContext(Traced.get.context).end(Time.nowNanoPrecision.inNanoseconds, TimeUnit.NANOSECONDS)
         }
       }
     }

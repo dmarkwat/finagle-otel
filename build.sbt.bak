@@ -6,6 +6,10 @@ val otelVersion = "1.19.0"
 val otelAgentVersion = "1.19.0"
 val finagleVersion = "22.7.0"
 
+lazy val LibTest = config("library") extend (Test)
+
+lazy val AgentTest = config("javaagent") extend (Test)
+
 lazy val core = (project in file("core"))
   .settings(
     name := "core",
@@ -22,9 +26,16 @@ lazy val core = (project in file("core"))
       "io.opentelemetry" % "opentelemetry-semconv" % s"$otelVersion-alpha" % "test" ::
       Nil
   )
+  .configs(LibTest, AgentTest)
+  .settings(
+    inConfig(LibTest)(Defaults.testTasks),
+    inConfig(AgentTest)(Defaults.testTasks),
+    LibTest / envVars ++= Map()
+  )
   .dependsOn(finagleBridge % "compile->compile;test->test", testbed % "test")
 
-lazy val extension = (file(".") / "instrumentation-extension/build/libs/instrumentation-extension-1.0-all.jar").getCanonicalPath
+lazy val extension =
+  (file(".") / "instrumentation-extension/build/libs/instrumentation-extension-1.0-all.jar").getCanonicalPath
 
 lazy val coreTesting = (project in file("core") / "testing")
   .enablePlugins(JavaAgent)

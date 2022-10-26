@@ -16,6 +16,10 @@ trait TracedTest {
     traced.context should equal(root)
   }
 
+  it should "cross the framework boundary" in new SdkTestCase {
+    Context.current() should equal(root)
+  }
+
   "A span" should "exist in local context" in new SdkTestCase {
     traced.contextOpt should be(empty)
 
