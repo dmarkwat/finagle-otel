@@ -3,12 +3,10 @@
  */
 package io.dmarkwat.twitter.finagle.app
 
-import org.junit.jupiter.api.Test
-
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.{Assert, Test}
 
 class MessageUtilsTest {
     @Test def testGetMessage(): Unit = {
-        assertEquals("Hello      World!", MessageUtils.getMessage())
+        Assert.assertEquals("Hello      World!", MessageUtils.getMessage())
     }
 }

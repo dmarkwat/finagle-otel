@@ -32,9 +32,9 @@ dependencies {
         // Define dependency versions as constraints
         implementation("org.scala-lang:scala-library:$scalaVersion")
 
-        testImplementation("org.scalatest:scalatest_2.13:3.2.12")
-        testImplementation("junit:junit:4.13.2")
-        testImplementation("org.scalatestplus:junit-4-13_2.13:3.2.2.0")
+        implementation("org.scalatest:scalatest_2.13:3.2.12")
+        implementation("junit:junit:4.13.2")
+        implementation("org.scalatestplus:junit-4-13_2.13:3.2.2.0")
 
         implementation("io.opentelemetry:opentelemetry-api:${otelVersion}")
         implementation("io.opentelemetry:opentelemetry-sdk:${otelVersion}")

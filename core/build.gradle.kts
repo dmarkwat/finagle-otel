@@ -1,5 +1,6 @@
 plugins {
     id("io.dmarkwat.twitter.finagle.scala-library-conventions")
+    id("java-test-fixtures")
 }
 
 dependencies {

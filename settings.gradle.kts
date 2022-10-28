@@ -10,10 +10,9 @@
 
 rootProject.name = "finagle-otel"
 include(
-    "app",
-    "list",
-    "utilities",
     "core",
+    "core:testing:lib",
+    "core:testing:javaagent",
     "finagle-bridge",
     "http",
     "extensions",
