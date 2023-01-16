@@ -11,4 +11,6 @@ dependencies {
 
     implementation(project(":testbed"))
     implementation(project(":core"))
+
+    runtimeOnly("ch.qos.logback:logback-classic")
 }

@@ -1,14 +1,13 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
+import io.dmarkwat.twitter.finagle.BaseTestSpec
 import io.dmarkwat.twitter.finagle.otel.{SdkProvider, SdkTestCase}
 import io.opentelemetry.api.trace.{Span, SpanKind}
 import io.opentelemetry.context.Context
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
 
 // conformance test for all different variations of Traced
 trait TracedTest {
-  self: AnyFlatSpec with should.Matchers with SdkProvider =>
+  self: BaseTestSpec with SdkProvider =>
 
   def traced: Traced
 

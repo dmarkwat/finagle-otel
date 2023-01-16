@@ -2,14 +2,18 @@ package io.dmarkwat.twitter.finagle.otel
 
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.{SpanKind, Tracer}
-import io.opentelemetry.context.Context
+import io.opentelemetry.context.{Context, ContextStorage, ContextStorageProvider}
 
-abstract class SdkTestCase()(implicit openTelemetry: => OpenTelemetry) {
+abstract class SdkTestCase()(implicit openTelemetry: => OpenTelemetry, storageProvider: => ContextStorageProvider) {
   lazy val tracer: Tracer = openTelemetry.getTracerProvider.get("test")
 
-  def root: Context = Context.root()
+  lazy val storage: ContextStorage = storageProvider.get()
 
-  def randomContext: Context = Context
+  def root: Context = storage.root()
+
+  def current(): Context = storage.current()
+
+  def randomContext: Context = storage
     .root()
     .`with`(
       tracer
@@ -18,9 +22,4 @@ abstract class SdkTestCase()(implicit openTelemetry: => OpenTelemetry) {
         .setSpanKind(SpanKind.INTERNAL)
         .startSpan()
     )
-}
-
-object SdkTestCase {
-
-  def in(fn: SdkTestCase => Unit)(implicit otel: => OpenTelemetry): Unit = fn(new SdkTestCase()(otel) {})
 }

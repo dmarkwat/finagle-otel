@@ -2,21 +2,19 @@ package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.{Filter, Service}
 import com.twitter.util.{Await, Future}
+import io.dmarkwat.twitter.finagle.BaseTestSpec
 import io.dmarkwat.twitter.finagle.otel.{SdkProvider, SdkTestCase}
 import io.opentelemetry.api.trace.Span
 import io.opentelemetry.context.propagation.{TextMapGetter, TextMapPropagator, TextMapSetter}
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
+import org.junit.runner.RunWith
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor1}
+import org.scalatestplus.junit.JUnitRunner
 
 import java.lang
 import scala.jdk.CollectionConverters.IterableHasAsJava
 
-class TraceSpanInitializerTest
-    extends AnyFlatSpec
-    with should.Matchers
-    with TableDrivenPropertyChecks
-    with SdkProvider.Library {
+@RunWith(classOf[JUnitRunner])
+class TraceSpanInitializerTest extends BaseTestSpec with TableDrivenPropertyChecks with SdkProvider.Library {
 
   val propagators: TableFor1[TextMapPropagator] = Table(
     "p",

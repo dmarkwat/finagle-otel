@@ -26,7 +26,7 @@ class HttpServerTracer extends HttpTracer with Logging {
   override def statusClassifier(status: Int): StatusCode = if (status < 500) StatusCode.OK else StatusCode.ERROR
 
   override def clientAddressAttrs(ia: InetSocketAddress): Attributes = Attributes.of(
-    NET_PEER_IP,
+    NET_SOCK_PEER_ADDR,
     ia.getAddress.getHostAddress,
     NET_PEER_NAME,
     ia.getHostName,
@@ -35,7 +35,7 @@ class HttpServerTracer extends HttpTracer with Logging {
   )
 
   override def serverAddressAttrs(ia: InetSocketAddress): Attributes = Attributes.of(
-    NET_HOST_IP,
+    NET_SOCK_HOST_ADDR,
     ia.getAddress.getHostAddress,
     NET_HOST_NAME,
     ia.getHostName,

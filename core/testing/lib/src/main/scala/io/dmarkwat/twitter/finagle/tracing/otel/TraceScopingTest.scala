@@ -1,21 +1,21 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.util.Await
-import io.dmarkwat.twitter.finagle.PoolSupport1
 import io.dmarkwat.twitter.finagle.otel.{ExecutorSupport, SdkProvider, SdkTestCase}
 import io.dmarkwat.twitter.finagle.tracing.otel.Implicits.RichContext
-import io.opentelemetry.api.trace.Span
+import io.dmarkwat.twitter.finagle.{BaseTestSpec, PoolSupport1}
+import org.junit.runner.RunWith
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
+import org.scalatestplus.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class TraceScopingTest
-    extends AnyFlatSpec
-    with should.Matchers
+    extends BaseTestSpec
     with BeforeAndAfterEach
     with SdkProvider.Library
     with PoolSupport1
-    with ExecutorSupport {
+    with ExecutorSupport
+    with ExplicitStorage {
 
   "Some function" should "use current" in new SdkTestCase {
     TraceScoping.extern.makeCurrent(TraceSpan.context) {
@@ -38,10 +38,10 @@ class TraceScopingTest
     val ctx = this.randomContext
     val fn = TraceScoping.extern.wrapping(ctx) {
       thread should not equal Thread.currentThread()
-      Span.current() should equal(ctx.asSpan)
+      current().asSpan should equal(ctx.asSpan)
     }
 
-    Span.current() should equal(root.asSpan)
+    current().asSpan should equal(root.asSpan)
     Await.result(primary { fn.apply() })
   }
 }

@@ -3,8 +3,10 @@ plugins {
     id("com.ryandens.javaagent-test") version "0.4.0"
 }
 
+val otelJavaagentVersion: String by extra.properties
+
 dependencies {
-    javaagent("io.opentelemetry.javaagent:opentelemetry-javaagent:1.19.1")
+    javaagent("io.opentelemetry.javaagent:opentelemetry-javaagent:${otelJavaagentVersion}")
 
     testImplementation("io.opentelemetry:opentelemetry-sdk")
 

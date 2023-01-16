@@ -1,17 +1,13 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
+import io.dmarkwat.twitter.finagle.BaseTestSpec
 import io.dmarkwat.twitter.finagle.otel.{SdkProvider, SdkTestCase}
 import io.dmarkwat.twitter.finagle.tracing.otel.Implicits.RichContext
 import io.opentelemetry.context.Context
-import org.junit.runner.RunWith
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
-import org.scalatestplus.junit.JUnitRunner
 
 import scala.util.Using
 
-@RunWith(classOf[JUnitRunner])
-class CompositeTracedTest extends AnyFlatSpec with should.Matchers with SdkProvider.Library with TracedTest {
+class CompositeTracedTest extends BaseTestSpec with SdkProvider.Library with TracedTest with ExplicitStorage {
   override def traced: Traced = CompositeTraced
 
   it should "externalize across the framework boundary" in new SdkTestCase {

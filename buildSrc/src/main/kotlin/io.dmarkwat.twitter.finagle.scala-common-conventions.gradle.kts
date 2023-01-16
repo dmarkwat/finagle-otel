@@ -7,6 +7,7 @@
 plugins {
     // Apply the scala Plugin to add support for Scala.
     scala
+    id("io.dmarkwat.twitter.finagle.common-conventions")
 }
 
 repositories {
@@ -19,22 +20,25 @@ repositories {
     }
 }
 
-val otelVersion by extra("1.19.0")
-val otelAlphaVersion by extra("${otelVersion}-alpha")
-val otelJavaagentVersion by extra("1.19.1")
-val otelJavaagentAlphaVersion by extra("${otelJavaagentVersion}-alpha")
+val otelVersion: String by extra
+val otelAlphaVersion: String by extra
+val otelJavaagentVersion: String by extra
+val otelJavaagentAlphaVersion: String by extra
 
-val finagleVersion by extra("22.7.0")
-val scalaVersion by extra("2.13.8")
+val finagleVersion: String by extra
+val scalaVersion: String by extra
+val scalaMinor: String by extra
+
+val scalified: (String) -> String by extra
 
 dependencies {
     constraints {
         // Define dependency versions as constraints
         implementation("org.scala-lang:scala-library:$scalaVersion")
 
-        implementation("org.scalatest:scalatest_2.13:3.2.12")
+        implementation("${scalified("org.scalatest:scalatest")}:3.2.14")
         implementation("junit:junit:4.13.2")
-        implementation("org.scalatestplus:junit-4-13_2.13:3.2.2.0")
+        implementation("${scalified("org.scalatestplus:junit-4-13")}:3.2.14.0")
 
         implementation("io.opentelemetry:opentelemetry-api:${otelVersion}")
         implementation("io.opentelemetry:opentelemetry-sdk:${otelVersion}")
@@ -43,20 +47,22 @@ dependencies {
         implementation("io.opentelemetry.javaagent:opentelemetry-testing-common:$otelAlphaVersion")
         implementation("io.opentelemetry:opentelemetry-sdk-extension-autoconfigure-spi:$otelVersion")
 
-        implementation("com.twitter:util-core_2.13:$finagleVersion")
-        implementation("com.twitter:finagle-core_2.13:$finagleVersion")
-        implementation("com.twitter:finagle-http_2.13:$finagleVersion")
+        implementation("${scalified("com.twitter:util-core")}:$finagleVersion")
+        implementation("${scalified("com.twitter:finagle-core")}:$finagleVersion")
+        implementation("${scalified("com.twitter:finagle-http")}:$finagleVersion")
 
         runtimeOnly("ch.qos.logback:logback-classic:1.2.10")
     }
 
-    // Use Scala 2.13 in our library project
+    // Use Scala $scalaMinor in our library project
     implementation("org.scala-lang:scala-library")
 
-    testImplementation("org.scalatest:scalatest_2.13")
+    testImplementation(scalified("org.scalatest:scalatest"))
     testImplementation("junit:junit")
-    testImplementation("org.scalatestplus:junit-4-13_2.13")
+    testImplementation(scalified("org.scalatestplus:junit-4-13"))
     testRuntimeOnly("com.vladsch.flexmark:flexmark-all:0.35.10")
+
+    testRuntimeOnly("ch.qos.logback:logback-classic")
 }
 
 // didn't work;

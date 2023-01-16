@@ -1,11 +1,9 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
+import io.dmarkwat.twitter.finagle.BaseTestSpec
+import org.junit.runner.RunWith
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
+import org.scalatestplus.junit.JUnitRunner
 
-class ContextStorageProviderTest
-    extends AnyFlatSpec
-    with should.Matchers
-    with BeforeAndAfterEach
-    with BeforeAndAfterAll {}
+@RunWith(classOf[JUnitRunner])
+class ContextStorageProviderTest extends BaseTestSpec with BeforeAndAfterEach with BeforeAndAfterAll {}

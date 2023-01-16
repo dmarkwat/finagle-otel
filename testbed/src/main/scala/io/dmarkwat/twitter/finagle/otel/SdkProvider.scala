@@ -1,11 +1,14 @@
 package io.dmarkwat.twitter.finagle.otel
 
 import io.opentelemetry.api.{GlobalOpenTelemetry, OpenTelemetry}
+import io.opentelemetry.context.{ContextStorage, ContextStorageProvider}
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.trace.SdkTracerProvider
 
 trait SdkProvider {
   implicit def openTelemetry: OpenTelemetry
+
+  implicit def storageProvider: ContextStorageProvider = ContextStorage.get _
 }
 
 object SdkProvider {

@@ -1,15 +1,17 @@
 package io.dmarkwat.twitter.finagle.tracing.otel
 
 import com.twitter.finagle.context.Contexts
+import io.dmarkwat.twitter.finagle.BaseTestSpec
 import io.dmarkwat.twitter.finagle.otel.{SdkProvider, SdkTestCase}
 import io.dmarkwat.twitter.finagle.tracing.otel.ContextStorage.{ContextContainer, ctxKey}
 import io.opentelemetry.context.Context
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should
+import org.junit.runner.RunWith
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.util.Using
 
-class ContextStorageTest extends AnyFlatSpec with should.Matchers with SdkProvider.Library {
+@RunWith(classOf[JUnitRunner])
+class ContextStorageTest extends BaseTestSpec with SdkProvider.Library with ExplicitStorage {
 
   def containedOver[O](context: Context)(f: => O): O = {
     Contexts.local.let(ctxKey, new ContextContainer(context)) {
@@ -18,8 +20,6 @@ class ContextStorageTest extends AnyFlatSpec with should.Matchers with SdkProvid
   }
 
   "ContextStorage" should "get current context" in new SdkTestCase {
-    val storage = new ContextStorage
-
     storage.current() should be(null)
 
     containedOver(root) {
@@ -33,8 +33,6 @@ class ContextStorageTest extends AnyFlatSpec with should.Matchers with SdkProvid
   }
 
   "ContextStorage" should "attach context" in new SdkTestCase {
-    val storage = new ContextStorage
-
     an[Exception] should be thrownBy {
       storage.attach(root)
     }

@@ -69,6 +69,9 @@ abstract class OtelTracer extends Tracer {
 
   // always sample when working with otel -- it will make the decisions
   override def sampleTrace(traceId: TraceId): Option[Boolean] = Tracer.SomeTrue
+
+  // see sampleTrace() -- same answer
+  override def getSampleRate: Float = 1.0f
 }
 
 object OtelTracer {
