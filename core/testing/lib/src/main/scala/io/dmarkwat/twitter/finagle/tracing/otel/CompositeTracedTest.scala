@@ -7,7 +7,7 @@ import io.opentelemetry.context.Context
 
 import scala.util.Using
 
-class CompositeTracedTest extends BaseTestSpec with SdkProvider.Library with TracedTest with ExplicitStorage {
+class CompositeTracedTest extends BaseTestSpec with SdkProvider.Library with TracedTest {
   override def traced: Traced = CompositeTraced
 
   it should "externalize across the framework boundary" in new SdkTestCase {

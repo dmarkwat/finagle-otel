@@ -14,8 +14,7 @@ class TraceScopingTest
     with BeforeAndAfterEach
     with SdkProvider.Library
     with PoolSupport1
-    with ExecutorSupport
-    with ExplicitStorage {
+    with ExecutorSupport {
 
   "Some function" should "use current" in new SdkTestCase {
     TraceScoping.extern.makeCurrent(TraceSpan.context) {

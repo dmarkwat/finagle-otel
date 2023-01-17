@@ -7,8 +7,6 @@ import io.opentelemetry.sdk.trace.SdkTracerProvider
 
 trait SdkProvider {
   implicit def openTelemetry: OpenTelemetry
-
-  implicit def storageProvider: ContextStorageProvider = ContextStorage.get _
 }
 
 object SdkProvider {

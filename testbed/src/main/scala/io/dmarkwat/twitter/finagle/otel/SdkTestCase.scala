@@ -4,16 +4,14 @@ import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.api.trace.{SpanKind, Tracer}
 import io.opentelemetry.context.{Context, ContextStorage, ContextStorageProvider}
 
-abstract class SdkTestCase()(implicit openTelemetry: => OpenTelemetry, storageProvider: => ContextStorageProvider) {
+abstract class SdkTestCase()(implicit openTelemetry: => OpenTelemetry) {
   lazy val tracer: Tracer = openTelemetry.getTracerProvider.get("test")
 
-  lazy val storage: ContextStorage = storageProvider.get()
+  def root: Context = Context.root()
 
-  def root: Context = storage.root()
+  def current(): Context = Context.current()
 
-  def current(): Context = storage.current()
-
-  def randomContext: Context = storage
+  def randomContext: Context = Context
     .root()
     .`with`(
       tracer
